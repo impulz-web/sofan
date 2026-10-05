@@ -1,0 +1,86 @@
+.page {
+  min-height: 65vh;
+  padding-bottom: 5rem;
+  background: var(--sofan-white);
+}
+
+.hero {
+  padding: clamp(3rem, 8vw, 6rem) 0;
+  background: var(--sofan-cream);
+}
+
+.hero > div {
+  display: grid;
+  justify-items: start;
+  gap: 1rem;
+}
+
+.hero h1 {
+  max-width: 16ch;
+  color: var(--sofan-brown);
+  font-size: clamp(2.7rem, 7vw, 5rem);
+  line-height: 0.98;
+  text-transform: uppercase;
+}
+
+.hero > div > p:last-child {
+  max-width: 48rem;
+  color: var(--sofan-text-soft);
+  font-size: 1.1rem;
+}
+
+.content {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(18rem, 0.9fr);
+  align-items: start;
+  gap: 2rem;
+  padding-top: 3rem;
+}
+
+.published {
+  display: grid;
+  gap: 1rem;
+}
+
+.published h2 {
+  color: var(--sofan-brown);
+  font-size: clamp(1.5rem, 3vw, 2rem);
+}
+
+.published > p {
+  padding: 1.25rem;
+  border: 1px solid var(--sofan-line);
+  background: var(--sofan-cream);
+  color: var(--sofan-text-soft);
+}
+
+.list {
+  display: grid;
+  gap: 1rem;
+}
+
+.card {
+  display: grid;
+  gap: 1rem;
+  padding: clamp(1.25rem, 3vw, 2rem);
+  border: 1px solid var(--sofan-line);
+  background: var(--sofan-cream);
+}
+
+.card blockquote {
+  margin: 0;
+  color: var(--sofan-brown);
+  white-space: pre-wrap;
+}
+
+.card p {
+  color: var(--sofan-terracotta);
+  font-size: 0.85rem;
+  font-weight: 750;
+}
+
+@media (max-width: 850px) {
+  .content {
+    grid-template-columns: 1fr;
+  }
+}

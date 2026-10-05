@@ -22,9 +22,15 @@ export function SermonCard({ title, speaker, date, image, href, featured = false
           <span>{date}</span>
         </div>
         <h3>{title}</h3>
-        <a href={href} className="sermon-card__link">
-          Watch sermon <span aria-hidden="true">→</span>
-        </a>
+        {href && href !== "#" ? (
+          <a href={href} className="sermon-card__link">
+            Watch sermon <span aria-hidden="true">→</span>
+          </a>
+        ) : (
+          <span className="sermon-card__link" aria-label="Sermon recording link is not available">
+            Recording link not available
+          </span>
+        )}
       </div>
     </article>
   );

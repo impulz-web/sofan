@@ -70,7 +70,8 @@ export async function GET(request: Request) {
     if (status === 206) headers.set("Content-Range", `bytes ${start}-${end}/${size}`);
 
     return new Response(chunk, { status, headers });
-  } catch {
+  } catch (error) {
+    console.error("Private prayer audio could not be retrieved.", error);
     return notFound();
   }
 }

@@ -1,8 +1,121 @@
 export type FinanceType = "tithe" | "offering" | "donation";
 export type FinanceFilter = "all" | FinanceType;
-export type AdminTab = "dashboard" | "finance" | "news" | "events" | "prayer-requests";
+export type AdminTab = "dashboard" | "finance" | "news" | "events" | "prayer-requests" | "testimonies" | "ministry" | "admin-users";
 export type DatabaseStatus = "connected" | "not-configured" | "unavailable";
-export type PrayerStatus = "pending" | "prayed_for" | "archived";
+export type PrayerStatus =
+  | "new_request"
+  | "contacted"
+  | "prayer_in_progress"
+  | "follow_up_needed"
+  | "answered"
+  | "closed";
+export type TestimonyModerationStatus = "pending" | "approved" | "rejected";
+
+export interface Testimony {
+  id: string;
+  displayName: string | null;
+  email: string | null;
+  phone: string | null;
+  content: string;
+  isAnonymous: boolean;
+  publicationConsent: boolean;
+  moderationStatus: TestimonyModerationStatus;
+  published: boolean;
+  createdAt: string;
+}
+
+export interface TestimonySubmission {
+  displayName: string | null;
+  email?: string | null;
+  phone?: string | null;
+  content: string;
+  isAnonymous: boolean;
+  publicationConsent: boolean;
+}
+
+export interface DailyDevotion {
+  id: string;
+  title: string;
+  scripture: string;
+  message: string;
+  prayer: string;
+  devotionDate: string;
+  imageUrl: string | null;
+  videoUrl: string | null;
+  published: boolean;
+  createdAt: string;
+}
+
+export interface DailyDevotionInput {
+  id?: string;
+  title: string;
+  scripture: string;
+  message: string;
+  prayer: string;
+  devotionDate: string;
+  imageUrl: string;
+  videoUrl: string;
+  published: boolean;
+}
+
+export type MinistryMediaKind = "sermon" | "prayer_video" | "ministry_video";
+
+export interface MinistryMediaItem {
+  id: string;
+  kind: MinistryMediaKind;
+  category: string | null;
+  title: string;
+  description: string;
+  speaker: string | null;
+  mediaDate: string | null;
+  scripture: string | null;
+  videoUrl: string;
+  thumbnailUrl: string | null;
+  published: boolean;
+  createdAt: string;
+}
+
+export interface PublishedMinistryMediaFilters {
+  kind?: MinistryMediaKind;
+  category?: string;
+}
+
+export interface MinistryMediaInput {
+  id?: string;
+  kind: MinistryMediaKind;
+  category: string;
+  title: string;
+  description: string;
+  speaker: string;
+  mediaDate: string;
+  scripture: string;
+  videoUrl: string;
+  thumbnailUrl: string;
+  published: boolean;
+}
+
+export interface CharityProject {
+  id: string;
+  title: string;
+  category: string;
+  description: string;
+  imageUrl: string;
+  supportContact: string | null;
+  supportCta: string | null;
+  published: boolean;
+  createdAt: string;
+}
+
+export interface CharityProjectInput {
+  id?: string;
+  title: string;
+  category: string;
+  description: string;
+  imageUrl: string;
+  supportContact: string;
+  supportCta: string;
+  published: boolean;
+}
 
 export interface FinanceTransaction {
   id: string;
@@ -50,7 +163,7 @@ export interface FinanceSummary {
 export interface AdminSnapshot {
   databaseStatus: DatabaseStatus;
   summary: FinanceSummary;
-  pendingPrayerCount: string | null;
+  newPrayerRequestCount: string | null;
   transactions: FinanceTransaction[];
   news: NewsArticle[];
   events: AdminEvent[];
@@ -62,14 +175,29 @@ export interface PrayerRequest {
   id: string;
   name: string | null;
   phone: string | null;
+  contactEmail: string | null;
   requestText: string | null;
   isAnonymous: boolean;
+  isPrivate: boolean;
   hasAudio: boolean;
   audioDuration: number | null;
   audioMimeType: string | null;
   audioSize: string | null;
   status: PrayerStatus;
   createdAt: string;
+}
+
+export interface CreatePrayerRequestInput {
+  name: string | null;
+  phone: string | null;
+  contactEmail?: string | null;
+  requestText: string | null;
+  audioPath: string | null;
+  audioDuration: number | null;
+  audioMimeType: string | null;
+  audioSize: number | null;
+  isAnonymous: boolean;
+  isPrivate?: boolean;
 }
 
 export interface FinanceInput {

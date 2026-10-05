@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 interface EventCardProps {
   date: string;
   title: string;
@@ -13,9 +15,9 @@ export function EventCard({ date, title, time, description }: EventCardProps) {
         <h3>{title}</h3>
         <p className="event-card__time">{time}</p>
         <p>{description}</p>
-        <a href="#" className="text-link">
-          RSVP <span aria-hidden="true">→</span>
-        </a>
+        <Link href="/contact" className="text-link">
+          Contact about this event <span aria-hidden="true">→</span>
+        </Link>
       </div>
     </article>
   );

@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
+import { connection } from "next/server";
 import { Header } from "@/components/site/header";
 import { Footer } from "@/components/site/footer";
 import { LocationSection } from "@/components/site/location-section";
@@ -8,9 +9,25 @@ import { SectionHeading } from "@/components/site/section-heading";
 import { SermonCard } from "@/components/site/sermon-card";
 import { EventCard } from "@/components/site/event-card";
 import { Button } from "@/components/ui";
-import { events, ministries, sermons } from "@/data/site";
+import { ministries, sermons } from "@/data/site";
+import { loadPublicEvents } from "@/lib/public-events";
 
-export default function Home() {
+function formatEventDate(value: string) {
+  const date = new Date(`${value}T12:00:00`);
+  return Number.isNaN(date.valueOf())
+    ? value
+    : new Intl.DateTimeFormat("en-GB", { day: "2-digit", month: "short" }).format(date);
+}
+
+function formatEventTime(start: string | null, end: string | null) {
+  if (!start) return "Time to be confirmed";
+  return end ? `${start}–${end}` : start;
+}
+
+export default async function Home() {
+  await connection();
+  const eventResult = await loadPublicEvents();
+
   return (
     <>
       <Header />
@@ -34,7 +51,7 @@ export default function Home() {
           <div className="hero-section__shape" aria-hidden="true" />
           <div className="container hero-section__layout">
             <div className="hero-copy-block hero-copy-block--overlay">
-              <p className="eyebrow eyebrow--terracotta">Seeds of Faith for All Nations</p>
+              <p className="eyebrow eyebrow--terracotta">Welcome to MJ Ministries</p>
               <h1>
                 A place to worship.
                 <span>A place to grow.</span>
@@ -44,15 +61,22 @@ export default function Home() {
                 SOFAN is a welcoming church family where faith is nurtured, communities are restored,
                 and lives are shaped by the love of Jesus Christ.
               </p>
+              <blockquote className="hero-scripture">
+                &ldquo;I come to you in the name of the LORD Almighty.&rdquo;
+                <cite>1 Samuel 17:45</cite>
+              </blockquote>
 
               <div className="hero-actions" aria-label="Call to action buttons">
-                <Button href="#coming-in" variant="primary">
-                  Join us
+                <Button href="/sermons" variant="primary">
+                  Browse sermons
                 </Button>
-                <Button href="#sermons" variant="secondary">
-                  Watch sermon
+                <Button href="/prayer-request" variant="secondary">
+                  Need prayer?
                 </Button>
               </div>
+              <Link className="hero-testimony-link" href="/testimonies">
+                Have a testimony? Share it with us.
+              </Link>
             </div>
 
           </div>
@@ -72,7 +96,7 @@ export default function Home() {
 
             <div className="apostle-message__copy">
               <p className="eyebrow eyebrow--terracotta">A Message from Apostle MJ</p>
-              <h2 id="apostle-message-heading"></h2>
+              <h2 id="apostle-message-heading">Carrying God&apos;s love to every corner.</h2>
               <p>
                 Greetings in the name of our Lord and Saviour Jesus Christ! I am so glad you found
                 your way here. This ministry exists to carry the fire of God&apos;s love to every
@@ -207,7 +231,7 @@ export default function Home() {
         <section className="sermons-section" id="sermons">
           <div className="container">
             <SectionHeading
-              eyebrow="Sermons"
+              eyebrow="Word"
               title="Words that grow us."
             />
 
@@ -234,6 +258,25 @@ export default function Home() {
                 ))}
               </div>
             </div>
+            <Link href="/sermons" className="inline-link">
+              Explore sermons <span aria-hidden="true">→</span>
+            </Link>
+          </div>
+        </section>
+
+        <section className="ministry-journey" aria-labelledby="ministry-journey-heading">
+          <div className="container ministry-journey__inner">
+            <div className="ministry-journey__copy">
+              <p className="eyebrow eyebrow--terracotta">Word · Prayer · Testimony · Service · Giving</p>
+              <h2 id="ministry-journey-heading">Faith in every part of life.</h2>
+              <p>Explore prayer resources, share a testimony for review, serve through outreach, or learn about giving.</p>
+            </div>
+            <nav className="ministry-journey__links" aria-label="Ministry resources">
+              <Link href="/prayer-for-viewers">Watch prayer resources <span aria-hidden="true">→</span></Link>
+              <Link href="/prayer-request">Submit a prayer request <span aria-hidden="true">→</span></Link>
+              <Link href="/testimonies">Share a testimony <span aria-hidden="true">→</span></Link>
+              <Link href="/charity">Explore charity <span aria-hidden="true">→</span></Link>
+            </nav>
           </div>
         </section>
 
@@ -244,17 +287,27 @@ export default function Home() {
               title="There&apos;s always room for you."
             />
 
-            <div className="events-grid">
-              {events.map((event) => (
+            {eventResult.status === "ready" && eventResult.rows.length > 0 ? (
+              <div className="events-grid">
+              {eventResult.rows.map((event) => (
                 <EventCard
-                  key={event.title}
-                  date={event.date}
+                  key={event.id}
+                  date={formatEventDate(event.eventDate)}
                   title={event.title}
-                  time={event.time}
+                  time={formatEventTime(event.startTime, event.endTime)}
                   description={event.description}
                 />
               ))}
-            </div>
+              </div>
+            ) : (
+              <p className="events-empty" role="status">
+                {eventResult.status === "unavailable"
+                  ? "Upcoming events are temporarily unavailable."
+                  : eventResult.status === "not-configured"
+                    ? "Upcoming events will appear here when event publishing is configured."
+                    : "No upcoming events have been published yet."}
+              </p>
+            )}
           </div>
         </section>
 
@@ -273,9 +326,12 @@ export default function Home() {
                 Thank you for partnering with SOFAN to nurture faith, serve communities, and make
                 Christ&apos;s love visible across every nation.
               </p>
-              <a href="#" className="give-button giving-button">
-                Give online <span aria-hidden="true">→</span>
-              </a>
+              <div className="giving-actions">
+                <Link href="/donate" className="give-button giving-button">
+                  Donate <span aria-hidden="true">→</span>
+                </Link>
+                <Link href="/charity" className="giving-charity-link">Explore charity outreach</Link>
+              </div>
             </div>
           </div>
         </section>

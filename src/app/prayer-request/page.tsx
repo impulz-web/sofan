@@ -38,8 +38,9 @@ export default function PrayerRequestPage() {
             <PrayerRequestForm />
           </div>
           <p className={styles.privacyNote}>
-            Recordings stay in your browser until you submit. Anonymous requests do not include your
-            name or phone number in the submitted request.
+            Recordings stay in your browser until you submit. You may include optional email or
+            WhatsApp contact details, submit anonymously, and mark the request private. Every
+            request remains admin-only and is never publicly displayed.
           </p>
         </section>
       </main>

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import {
-  getPendingPrayerRequestCountAction,
+  getNewPrayerRequestCountAction,
   getPrayerRequestAction,
   getSecureAudioUrl,
   updatePrayerRequestStatusAction,
@@ -11,12 +11,22 @@ import type { PrayerRequest, PrayerStatus } from "@/lib/admin-types";
 import adminStyles from "./admin.module.css";
 import styles from "./prayer-requests.module.css";
 
-const filters: { id: PrayerStatus | "all"; label: string }[] = [
-  { id: "all", label: "All" },
-  { id: "pending", label: "Pending" },
-  { id: "prayed_for", label: "Prayed For" },
-  { id: "archived", label: "Archived" },
+const pipelineStages: { id: PrayerStatus; label: string }[] = [
+  { id: "new_request", label: "New Request" },
+  { id: "contacted", label: "Contacted" },
+  { id: "prayer_in_progress", label: "Prayer in Progress" },
+  { id: "follow_up_needed", label: "Follow-up Needed" },
+  { id: "answered", label: "Answered" },
+  { id: "closed", label: "Closed" },
 ];
+
+function isPrayerStatus(value: string): value is PrayerStatus {
+  return pipelineStages.some((stage) => stage.id === value);
+}
+
+function prayerStatusLabel(status: PrayerStatus) {
+  return pipelineStages.find((stage) => stage.id === status)?.label ?? "Unknown";
+}
 
 function receivedDate(value: string) {
   const date = new Date(value);
@@ -41,33 +51,19 @@ function requestType(request: PrayerRequest) {
   return request.hasAudio ? "Voice Prayer Request" : "Written request";
 }
 
-function statusLabel(status: PrayerStatus) {
-  if (status === "prayed_for") return "Prayed For";
-  return status === "pending" ? "Pending" : "Archived";
-}
-
-function statusClass(status: PrayerStatus) {
-  if (status === "pending") return styles.pendingStatus;
-  return status === "prayed_for" ? adminStyles.statusPublished : adminStyles.statusDraft;
-}
-
 export function PrayerRequestsPanel({
   connected,
-  pendingCount,
-  onPendingCountChange,
+  newCount,
+  onNewCountChange,
   requests,
   loading,
-  filter,
-  onFilterChange,
   onRefresh,
 }: {
   connected: boolean;
-  pendingCount: string | null;
-  onPendingCountChange: (count: string) => void;
+  newCount: string | null;
+  onNewCountChange: (count: string) => void;
   requests: PrayerRequest[];
   loading: boolean;
-  filter: PrayerStatus | "all";
-  onFilterChange: (status: PrayerStatus | "all") => void;
   onRefresh: () => Promise<void>;
 }) {
   const [selected, setSelected] = useState<PrayerRequest | null>(null);
@@ -103,88 +99,86 @@ export function PrayerRequestsPanel({
     }
 
     const [count, updated] = await Promise.all([
-      getPendingPrayerRequestCountAction(),
+      getNewPrayerRequestCountAction(),
       getPrayerRequestAction(request.id),
     ]);
-    if (count !== null) onPendingCountChange(count);
-    if (updated) setSelected(updated);
+    if (count !== null) onNewCountChange(count);
+    if (updated && selected?.id === updated.id) setSelected(updated);
     await onRefresh();
     setBusy(false);
   }
-
-  const buttonText = selected?.status === "archived" ? "Restore to Pending" : "Mark as Prayed For";
-  const buttonStatus: PrayerStatus = selected?.status === "archived" ? "pending" : "prayed_for";
 
   return (
     <section className={adminStyles.panel} aria-labelledby="prayer-requests-heading">
       <div className={adminStyles.sectionHeading}>
         <div>
           <h2 id="prayer-requests-heading">Prayer Requests</h2>
-          <p className={adminStyles.mutedText}>{pendingCount === null ? "Pending count unavailable" : `${pendingCount} pending`}</p>
+          <p className={adminStyles.mutedText}>{newCount === null ? "New-request count unavailable" : `${newCount} new requests`}</p>
         </div>
       </div>
-
-      <nav className={adminStyles.subnav} aria-label="Prayer request status filters">
-        {filters.map((item) => (
-          <button
-            key={item.id}
-            type="button"
-            className={filter === item.id ? adminStyles.subnavActive : ""}
-            aria-current={filter === item.id ? "page" : undefined}
-            onClick={() => {
-              setSelected(null);
-              setAudioUrl("");
-              setError("");
-              onFilterChange(item.id);
-            }}
-          >
-            {item.label}{item.id === "pending" && pendingCount !== null ? ` (${pendingCount})` : ""}
-          </button>
-        ))}
-      </nav>
 
       {error && <p className={adminStyles.feedback} role="alert">{error}</p>}
       {!connected ? (
         <p className={adminStyles.emptyState}>Prayer request database is not connected.</p>
       ) : loading ? (
         <p className={adminStyles.emptyState} role="status">Loading prayer requests…</p>
-      ) : requests.length === 0 ? (
-        <p className={adminStyles.emptyState}>No prayer requests found.</p>
       ) : (
-        <>
-          <div className={styles.tableWrap}>
-            <table className={adminStyles.dataTable}>
-              <thead>
-                <tr><th>Name</th><th>Request type</th><th>Date</th><th>Status</th><th>Actions</th></tr>
-              </thead>
-              <tbody>
-                {requests.map((request) => (
-                  <tr key={request.id}>
-                    <td className={adminStyles.primaryCell}>{request.isAnonymous ? "Anonymous" : request.name || "Name not provided"}</td>
-                    <td>{requestType(request)}{request.hasAudio && <span className={styles.duration}> · {duration(request.audioDuration)}</span>}</td>
-                    <td>{receivedDate(request.createdAt)}</td>
-                    <td><span className={`${adminStyles.statusPill} ${statusClass(request.status)}`}>{statusLabel(request.status)}</span></td>
-                    <td><button className={adminStyles.textButton} type="button" onClick={() => void openRequest(request.id)}>Open</button></td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-
-          <div className={styles.mobileList}>
-            {requests.map((request) => (
-              <article className={styles.mobileCard} key={request.id}>
-                <div className={styles.mobileHeading}>
-                  <strong>{request.isAnonymous ? "Anonymous" : request.name || "Name not provided"}</strong>
-                  <span className={`${adminStyles.statusPill} ${statusClass(request.status)}`}>{statusLabel(request.status)}</span>
+        <div className={styles.pipeline} aria-label="Prayer request pipeline">
+          {pipelineStages.map((stage) => {
+            const stageRequests = requests.filter((request) => request.status === stage.id);
+            return (
+              <section className={styles.stage} key={stage.id} aria-labelledby={`prayer-stage-${stage.id}`}>
+                <header className={styles.stageHeader}>
+                  <h3 id={`prayer-stage-${stage.id}`}>{stage.label}</h3>
+                  <span>{stageRequests.length}</span>
+                </header>
+                <div className={styles.stageCards}>
+                  {stageRequests.length === 0 ? (
+                    <p className={styles.stageEmpty}>No requests</p>
+                  ) : stageRequests.map((request) => (
+                    <article className={styles.pipelineCard} key={request.id}>
+                      <div className={styles.cardHeading}>
+                        <strong>{request.isAnonymous ? "Anonymous" : request.name || "Name not provided"}</strong>
+                        {request.hasAudio && <span className={styles.duration}>{duration(request.audioDuration)}</span>}
+                      </div>
+                      <p>{requestType(request)}</p>
+                      <p className={styles.cardContact}>
+                        {[request.contactEmail, request.phone].filter(Boolean).join(" · ") || "No contact details"}
+                      </p>
+                      <p className={styles.cardDate}>{receivedDate(request.createdAt)}</p>
+                      <div className={styles.cardActions}>
+                        <button
+                          className={adminStyles.secondaryButton}
+                          type="button"
+                          onClick={() => void openRequest(request.id)}
+                        >
+                          View request
+                        </button>
+                        <label>
+                          <span className={styles.visuallyHidden}>Move {request.isAnonymous ? "anonymous request" : `request from ${request.name || "unnamed visitor"}`}</span>
+                          <select
+                            value={request.status}
+                            disabled={busy}
+                            onChange={(event) => {
+                              if (isPrayerStatus(event.target.value)) {
+                                void updateStatus(request, event.target.value);
+                              }
+                            }}
+                          >
+                            {pipelineStages.map((option) => (
+                              <option key={option.id} value={option.id}>{option.label}</option>
+                            ))}
+                          </select>
+                        </label>
+                      </div>
+                    </article>
+                  ))}
                 </div>
-                <span>{requestType(request)}{request.hasAudio && ` · ${duration(request.audioDuration)}`}</span>
-                <span className={adminStyles.mutedText}>{receivedDate(request.createdAt)}</span>
-                <button className={adminStyles.secondaryButton} type="button" onClick={() => void openRequest(request.id)}>Open request</button>
-              </article>
-            ))}
-          </div>
-        </>
+              </section>
+            );
+          })}
+          {requests.length === 0 && <p className={adminStyles.emptyState}>No prayer requests found.</p>}
+        </div>
       )}
 
       {selected && (
@@ -198,8 +192,10 @@ export function PrayerRequestsPanel({
           </div>
           <dl className={styles.metadata}>
             <div><dt>Name</dt><dd>{selected.isAnonymous ? "Anonymous" : selected.name || "Not provided"}</dd></div>
-            <div><dt>Status</dt><dd>{statusLabel(selected.status)}</dd></div>
-            <div><dt>Contact</dt><dd>{selected.isAnonymous ? "Not provided" : selected.phone || "Not provided"}</dd></div>
+            <div><dt>Pipeline stage</dt><dd>{prayerStatusLabel(selected.status)}</dd></div>
+            <div><dt>Email</dt><dd>{selected.contactEmail || "Not provided"}</dd></div>
+            <div><dt>Phone / WhatsApp</dt><dd>{selected.phone || "Not provided"}</dd></div>
+            <div><dt>Privacy</dt><dd>{selected.isPrivate ? "Private · Admin only" : "Admin only"}</dd></div>
           </dl>
           {selected.requestText && (
             <section className={styles.written} aria-labelledby="written-prayer-heading">
@@ -215,8 +211,22 @@ export function PrayerRequestsPanel({
             </section>
           )}
           <div className={styles.detailActions}>
-            {selected.status !== "prayed_for" && <button className={adminStyles.primaryButton} type="button" disabled={busy} onClick={() => void updateStatus(selected, buttonStatus)}>{busy ? "Updating…" : buttonText}</button>}
-            {selected.status !== "archived" && <button className={adminStyles.secondaryButton} type="button" disabled={busy} onClick={() => void updateStatus(selected, "archived")}>Archive</button>}
+            <label className={styles.stageField}>
+              <span>Pipeline stage</span>
+              <select
+                value={selected.status}
+                disabled={busy}
+                onChange={(event) => {
+                  if (isPrayerStatus(event.target.value)) {
+                    void updateStatus(selected, event.target.value);
+                  }
+                }}
+              >
+                {pipelineStages.map((stage) => (
+                  <option key={stage.id} value={stage.id}>{stage.label}</option>
+                ))}
+              </select>
+            </label>
           </div>
         </article>
       )}

@@ -1,12 +1,15 @@
 export const navItems = [
   { label: "Home", href: "/" },
-  { label: "About", href: "/about" },
-  { label: "Charity", href: "/charity" },
-  { label: "Contact", href: "/contact" },
+  { label: "Daily Devotion", href: "/daily-devotion" },
+  { label: "Sermons", href: "/sermons" },
+  { label: "Prayer for Viewers", href: "/prayer-for-viewers" },
   { label: "Prayer Request", href: "/prayer-request" },
-  { label: "Ministries", href: "/#ministries" },
-  { label: "Sermons", href: "/#sermons" },
-  { label: "Events", href: "/#events" },
+  { label: "Testimonies", href: "/testimonies" },
+  { label: "Videos", href: "/videos" },
+  { label: "Charity", href: "/charity" },
+  { label: "Donate", href: "/donate" },
+  { label: "About Us", href: "/about" },
+  { label: "Contact", href: "/contact" },
 ];
 
 export const contactInfo = {
@@ -14,7 +17,7 @@ export const contactInfo = {
   location: "Juba, South Sudan",
   region: "East Africa",
   whatsappNumber: "+211 921 444 658",
-  whatsappUrl: "https://wa.me/211921444658",
+  whatsappUrl: "https://api.whatsapp.com/send/?phone=211921444658",
   email: "apostlemjmanyiel@gmail.com",
   serviceTimes: [
     { name: "Sunday Service", time: "9:00 AM" },
@@ -78,26 +81,5 @@ export const sermons = [
     date: "May 25, 2026",
     image: "/apostle%204.jpg",
     href: "#",
-  },
-];
-
-export const events = [
-  {
-    date: "MAY 25",
-    title: "Family Prayer Night",
-    time: "7:00 PM",
-    description: "A peaceful evening of prayer, worship, and encouragement for families across the city.",
-  },
-  {
-    date: "JUN 01",
-    title: "Community Outreach",
-    time: "9:00 AM",
-    description: "Join us as we serve, share hope, and bless local families through practical acts of care.",
-  },
-  {
-    date: "JUN 08",
-    title: "Youth Encounter",
-    time: "4:00 PM",
-    description: "A time of connection, teaching, worship, and spiritual growth for teens and young adults.",
   },
 ];

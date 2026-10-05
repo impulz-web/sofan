@@ -18,9 +18,11 @@ function extensionFor(mimeType: string) {
 
 export function PrayerRequestForm() {
   const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [requestText, setRequestText] = useState("");
   const [anonymous, setAnonymous] = useState(false);
+  const [isPrivate, setIsPrivate] = useState(true);
   const [recording, setRecording] = useState(false);
   const [recordedBlob, setRecordedBlob] = useState<Blob | null>(null);
   const [previewUrl, setPreviewUrl] = useState("");
@@ -174,9 +176,11 @@ export function PrayerRequestForm() {
 
     const formData = new FormData();
     formData.append("name", anonymous ? "" : name.trim());
+    formData.append("email", anonymous ? "" : email.trim());
     formData.append("phone", anonymous ? "" : phone.trim());
     formData.append("requestText", trimmedRequest);
     formData.append("isAnonymous", String(anonymous));
+    formData.append("isPrivate", String(isPrivate));
     if (recordedBlob) {
       formData.append("audio", recordedBlob, `prayer-request.${extensionFor(recordedBlob.type)}`);
     }
@@ -192,9 +196,11 @@ export function PrayerRequestForm() {
 
       setSubmissionMessage("Your prayer request has been received.");
       setName("");
+      setEmail("");
       setPhone("");
       setRequestText("");
       setAnonymous(false);
+      setIsPrivate(true);
       setRecordingMessage("");
       clearRecording();
     } catch {
@@ -208,19 +214,27 @@ export function PrayerRequestForm() {
     <form className="prayer-request-form" onSubmit={submitRequest}>
       <div className="prayer-request-form__fields">
         <label className="prayer-request-form__field" htmlFor="prayer-name">
-          <span>Name <span className="prayer-request-form__optional">Optional</span></span>
-          <input id="prayer-name" name="name" autoComplete="name" value={name} disabled={anonymous || submitting} onChange={(event) => setName(event.target.value)} maxLength={160} />
+          <span>Name {!anonymous && <span className="prayer-request-form__optional">Required</span>}</span>
+          <input id="prayer-name" name="name" autoComplete="name" value={name} required={!anonymous} disabled={anonymous || submitting} onChange={(event) => setName(event.target.value)} maxLength={160} />
+        </label>
+        <label className="prayer-request-form__field" htmlFor="prayer-email">
+          <span>Email <span className="prayer-request-form__optional">Optional</span></span>
+          <input id="prayer-email" name="email" type="email" autoComplete="email" value={email} disabled={anonymous || submitting} onChange={(event) => setEmail(event.target.value)} maxLength={254} />
         </label>
         <label className="prayer-request-form__field" htmlFor="prayer-phone">
-          <span>Phone <span className="prayer-request-form__optional">Optional</span></span>
+          <span>WhatsApp / phone <span className="prayer-request-form__optional">Optional</span></span>
           <input id="prayer-phone" name="phone" type="tel" autoComplete="tel" value={phone} disabled={anonymous || submitting} onChange={(event) => setPhone(event.target.value)} maxLength={80} />
         </label>
         <label className="prayer-request-form__anonymous">
           <input type="checkbox" checked={anonymous} disabled={submitting} onChange={(event) => setAnonymous(event.target.checked)} />
           Submit anonymously
         </label>
+        <label className="prayer-request-form__anonymous">
+          <input type="checkbox" checked={isPrivate} disabled={submitting} onChange={(event) => setIsPrivate(event.target.checked)} />
+          Private / Confidential — keep this request for the pastoral team
+        </label>
         <label className="prayer-request-form__field" htmlFor="prayer-request-text">
-          <span>Prayer request <span className="prayer-request-form__optional">Optional if recording</span></span>
+          <span>Prayer request <span className="prayer-request-form__optional">Required unless you record a voice note</span></span>
           <textarea id="prayer-request-text" name="requestText" rows={5} value={requestText} disabled={submitting} onChange={(event) => setRequestText(event.target.value)} maxLength={MAX_PRAYER_TEXT_LENGTH} />
         </label>
       </div>
@@ -270,6 +284,9 @@ export function PrayerRequestForm() {
         </a>
       </div>
       {submissionMessage && <p className="prayer-request-form__message" role="status" aria-live="polite">{submissionMessage}</p>}
+      <p className="prayer-request-form__message">
+        All requests are admin-only and are never published publicly.
+      </p>
     </form>
   );
 }

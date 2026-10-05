@@ -1,7 +1,9 @@
 "use client";
 
 import { useState, type FormEvent, type ReactNode } from "react";
+import Link from "next/link";
 import {
+  createAdminUserAction,
   deleteEvent,
   deleteFinanceTransaction,
   deleteNewsArticle,
@@ -30,6 +32,9 @@ import type {
 } from "@/lib/admin-types";
 import styles from "./admin.module.css";
 import { PrayerRequestsPanel } from "./prayer-requests-panel";
+import { TestimoniesPanel } from "./testimonies-panel";
+import { MinistryContentPanel } from "./ministry-content-panel";
+import { logoutAdminAction } from "./auth-actions";
 
 const navItems: { id: AdminTab; label: string }[] = [
   { id: "dashboard", label: "Dashboard" },
@@ -37,6 +42,9 @@ const navItems: { id: AdminTab; label: string }[] = [
   { id: "news", label: "News" },
   { id: "events", label: "Events" },
   { id: "prayer-requests", label: "Prayer Requests" },
+  { id: "testimonies", label: "Testimonies" },
+  { id: "ministry", label: "Ministry Content" },
+  { id: "admin-users", label: "Admin Users" },
 ];
 
 const financeViews: { id: "overview" | FinanceFilter; label: string }[] = [
@@ -151,8 +159,8 @@ function StatusPill({ published }: { published: boolean }) {
 function DatabaseNotice({ status }: { status: AdminSnapshot["databaseStatus"] }) {
   if (status === "connected") return null;
   const message = status === "not-configured"
-    ? "Database not configured. Set DATABASE_URL, then apply db/schema.sql and db/seed.sql to the PostgreSQL database."
-    : "PostgreSQL is unavailable or the schema is missing. Check the connection and apply the SQL setup files.";
+    ? "Supabase is not configured. Set the Supabase project URL, anon key, and service-role key, then apply the SQL files described in README.md."
+    : "Supabase is unavailable or the schema is missing. Check the project configuration and apply the SQL setup and migration files.";
   return (
     <div className={styles.databaseNotice} role="status">
       <strong>{status === "not-configured" ? "Database setup required" : "Database unavailable"}</strong>
@@ -161,7 +169,13 @@ function DatabaseNotice({ status }: { status: AdminSnapshot["databaseStatus"] })
   );
 }
 
-export function AdminDashboard({ initialData }: { initialData: AdminSnapshot }) {
+export function AdminDashboard({
+  initialData,
+  canPublishTestimonies,
+}: {
+  initialData: AdminSnapshot;
+  canPublishTestimonies: boolean;
+}) {
   const [snapshot, setSnapshot] = useState(initialData);
   const [activeTab, setActiveTab] = useState<AdminTab>("dashboard");
   const [financeView, setFinanceView] = useState<"overview" | FinanceFilter>("overview");
@@ -173,11 +187,13 @@ export function AdminDashboard({ initialData }: { initialData: AdminSnapshot }) 
   const [newsEditor, setNewsEditor] = useState<NewsInput | null>(null);
   const [eventEditor, setEventEditor] = useState<EventInput | null>(null);
   const [pendingDelete, setPendingDelete] = useState<{ kind: "finance" | "news" | "event"; id: string } | null>(null);
-  const [prayerStatusFilter, setPrayerStatusFilter] = useState<PrayerStatus | "all">("pending");
+  const [prayerStatusFilter, setPrayerStatusFilter] = useState<PrayerStatus | "all">("all");
   const [prayerRequests, setPrayerRequests] = useState<PrayerRequest[]>([]);
   const [prayerLoading, setPrayerLoading] = useState(false);
   const [notice, setNotice] = useState("");
   const [busy, setBusy] = useState(false);
+  const [newAdminEmail, setNewAdminEmail] = useState("");
+  const [newAdminPassword, setNewAdminPassword] = useState("");
 
   const connected = snapshot.databaseStatus === "connected";
   const pageTitle = navItems.find((item) => item.id === activeTab)?.label ?? "Dashboard";
@@ -203,7 +219,7 @@ export function AdminDashboard({ initialData }: { initialData: AdminSnapshot }) 
   function selectAdminTab(tab: AdminTab) {
     setActiveTab(tab);
     setNotice("");
-    if (tab === "prayer-requests") void loadPrayerRequests("pending");
+    if (tab === "prayer-requests") void loadPrayerRequests("all");
   }
 
   async function reloadSnapshot() {
@@ -262,6 +278,16 @@ export function AdminDashboard({ initialData }: { initialData: AdminSnapshot }) 
     if (!eventEditor) return;
     const input = { ...eventEditor };
     void completeAction(saveEvent(input), () => setEventEditor(null));
+  }
+
+  function submitAdminUser(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const email = newAdminEmail;
+    const password = newAdminPassword;
+    void completeAction(createAdminUserAction(email, password), () => {
+      setNewAdminEmail("");
+      setNewAdminPassword("");
+    });
   }
 
   async function confirmDelete() {
@@ -346,7 +372,7 @@ export function AdminDashboard({ initialData }: { initialData: AdminSnapshot }) 
               <button className={styles.textButton} type="button" onClick={() => selectAdminTab("prayer-requests")}>View requests</button>
             </div>
             <p className={styles.prayerPendingSummary}>
-              {connected && snapshot.pendingPrayerCount !== null ? `${snapshot.pendingPrayerCount} Pending` : "Pending count unavailable"}
+              {connected && snapshot.newPrayerRequestCount !== null ? `${snapshot.newPrayerRequestCount} New Requests` : "New-request count unavailable"}
             </p>
           </section>
         </div>
@@ -569,23 +595,30 @@ export function AdminDashboard({ initialData }: { initialData: AdminSnapshot }) 
           {navItems.map((item) => (
             <button key={item.id} type="button" className={activeTab === item.id ? styles.navActive : ""} aria-current={activeTab === item.id ? "page" : undefined} onClick={() => selectAdminTab(item.id)}>
               {item.label}
-              {item.id === "prayer-requests" && snapshot.pendingPrayerCount !== null && <span className={styles.prayerNavCount}>{snapshot.pendingPrayerCount}</span>}
+              {item.id === "prayer-requests" && snapshot.newPrayerRequestCount !== null && <span className={styles.prayerNavCount}>{snapshot.newPrayerRequestCount}</span>}
             </button>
           ))}
         </nav>
-        <div className={styles.sidebarFooter}>Demo mode · no password</div>
+        <div className={styles.sidebarFooter}>
+          <form action={logoutAdminAction}>
+            <button className={styles.textButton} type="submit">Sign out</button>
+          </form>
+        </div>
       </aside>
 
       <main className={styles.main}>
         <header className={styles.topbar}>
-          <div>
+          <div className={styles.topbarTitle}>
+            <Link href="/" className={styles.backButton}>← Back to website</Link>
+            <div>
             <p className={styles.breadcrumb}>SOFAN / Admin</p>
             <h1>{pageTitle}</h1>
+            </div>
           </div>
           <div className={styles.topbarStatus}>
             <span className={`${styles.connectionDot} ${connected ? styles.connectionReady : ""}`} />
-            <span>{connected ? "PostgreSQL connected" : snapshot.databaseStatus === "not-configured" ? "Database setup required" : "Database unavailable"}</span>
-            <span className={styles.demoBadge}>DEMO</span>
+            <span>{connected ? "Supabase connected" : snapshot.databaseStatus === "not-configured" ? "Database setup required" : "Database unavailable"}</span>
+            <span className={styles.demoBadge}>ADMIN</span>
           </div>
         </header>
 
@@ -599,14 +632,59 @@ export function AdminDashboard({ initialData }: { initialData: AdminSnapshot }) 
           {activeTab === "prayer-requests" && (
             <PrayerRequestsPanel
               connected={connected}
-              pendingCount={snapshot.pendingPrayerCount}
-              onPendingCountChange={(pendingPrayerCount) => setSnapshot((current) => ({ ...current, pendingPrayerCount }))}
+              newCount={snapshot.newPrayerRequestCount}
+              onNewCountChange={(newPrayerRequestCount) => setSnapshot((current) => ({ ...current, newPrayerRequestCount }))}
               requests={prayerRequests}
               loading={prayerLoading}
-              filter={prayerStatusFilter}
-              onFilterChange={(status) => void loadPrayerRequests(status)}
               onRefresh={() => loadPrayerRequests(prayerStatusFilter)}
             />
+          )}
+          {activeTab === "testimonies" && (
+            <TestimoniesPanel connected={connected} canPublish={canPublishTestimonies} />
+          )}
+          {activeTab === "ministry" && <MinistryContentPanel connected={connected} />}
+          {activeTab === "admin-users" && (
+            <section className={styles.panel} aria-labelledby="admin-users-heading">
+              <div className={styles.sectionHeading}>
+                <div>
+                  <h2 id="admin-users-heading">Create an admin account</h2>
+                  <p className={styles.mutedText}>Add trusted staff who need access to the SOFAN administration dashboard.</p>
+                </div>
+              </div>
+              <form className={styles.editorForm} onSubmit={submitAdminUser}>
+                <div className={styles.formGrid}>
+                  <Field label="Email address" htmlFor="new-admin-email">
+                    <input
+                      id="new-admin-email"
+                      type="email"
+                      autoComplete="email"
+                      value={newAdminEmail}
+                      onChange={(event) => setNewAdminEmail(event.target.value)}
+                      maxLength={254}
+                      required
+                    />
+                  </Field>
+                  <Field label="Initial password" htmlFor="new-admin-password">
+                    <input
+                      id="new-admin-password"
+                      type="password"
+                      autoComplete="new-password"
+                      value={newAdminPassword}
+                      onChange={(event) => setNewAdminPassword(event.target.value)}
+                      minLength={8}
+                      maxLength={1024}
+                      required
+                    />
+                  </Field>
+                </div>
+                <p className={styles.mutedText}>
+                  The new staff account will have the same admin access as yours. Share the initial password securely.
+                </p>
+                <button className={styles.primaryButton} type="submit" disabled={!connected || busy}>
+                  {busy ? "Creating account…" : "Create admin account"}
+                </button>
+              </form>
+            </section>
           )}
         </div>
       </main>
@@ -615,7 +693,7 @@ export function AdminDashboard({ initialData }: { initialData: AdminSnapshot }) 
         {navItems.map((item) => (
           <button key={item.id} type="button" className={activeTab === item.id ? styles.mobileNavActive : ""} aria-current={activeTab === item.id ? "page" : undefined} onClick={() => selectAdminTab(item.id)}>
             {item.label}
-            {item.id === "prayer-requests" && snapshot.pendingPrayerCount !== null && <span className={styles.prayerNavCount}>{snapshot.pendingPrayerCount}</span>}
+            {item.id === "prayer-requests" && snapshot.newPrayerRequestCount !== null && <span className={styles.prayerNavCount}>{snapshot.newPrayerRequestCount}</span>}
           </button>
         ))}
       </nav>

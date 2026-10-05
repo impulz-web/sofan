@@ -15,12 +15,17 @@ export function Footer() {
           <h3>Explore</h3>
           <ul>
             <li><Link href="/">Home</Link></li>
-            <li><Link href="/about">About</Link></li>
-            <li><Link href="/charity">Charity</Link></li>
-            <li><Link href="/contact">Contact</Link></li>
+            <li><Link href="/daily-devotion">Daily Devotion</Link></li>
+            <li><Link href="/sermons">Sermons</Link></li>
+            <li><Link href="/prayer-for-viewers">Prayer for Viewers</Link></li>
             <li><Link href="/prayer-request">Prayer Request</Link></li>
+            <li><Link href="/testimonies">Testimonies</Link></li>
+            <li><Link href="/videos">Videos</Link></li>
+            <li><Link href="/about">About Us</Link></li>
+            <li><Link href="/charity">Charity</Link></li>
+            <li><Link href="/donate">Donate</Link></li>
+            <li><Link href="/contact">Contact</Link></li>
             <li><Link href="/#ministries">Ministries</Link></li>
-            <li><Link href="/#sermons">Sermons</Link></li>
           </ul>
         </div>
 
@@ -46,7 +51,7 @@ export function Footer() {
 
       <div className="site-footer__bottom container">
         <p>© 2026 SOFAN. All rights reserved.</p>
-        <Link href="/#giving" className="footer-give">Give online</Link>
+        <Link href="/donate" className="footer-give">Give</Link>
       </div>
     </footer>
   );

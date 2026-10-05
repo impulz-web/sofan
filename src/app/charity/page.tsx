@@ -1,8 +1,10 @@
 import Image from "next/image";
 import type { Metadata } from "next";
+import { connection } from "next/server";
 import { Footer } from "@/components/site/footer";
 import { Header } from "@/components/site/header";
 import { contactInfo } from "@/data/site";
+import { loadPublishedCharityProjects } from "@/lib/public-ministry-content";
 
 export const metadata: Metadata = {
   title: "Charity & Outreach",
@@ -12,11 +14,22 @@ export const metadata: Metadata = {
 
 const programs = [
   {
+    number: "05",
+    title: "Helping Vulnerable Families",
+    description: "Ask SOFAN about current support for vulnerable families and their needs.",
+    detail:
+      "Specific services and current support needs should be confirmed with the ministry before contributing.",
+    action: "Ask about family support",
+    subject: "Vulnerable Family Support",
+    image: "/service%20to%20community.jpg",
+    alt: "SOFAN community members serving together.",
+  },
+  {
     number: "01",
     title: "Feeding Program",
-    description: "Providing nutritious meals to hungry families in our community every week.",
+    description: "Ask SOFAN whether food assistance is currently active and what support is needed.",
     detail:
-      "Every Saturday, our team prepares and distributes food packages to vulnerable families. No one should go hungry while we can help.",
+      "Current schedule, eligibility, and needs should be confirmed directly with the ministry.",
     action: "Support this program",
     subject: "Feeding Program support",
     image: "/WhatsApp%20Image%202026-10-03%20at%208.51.34%20PM.jpeg",
@@ -25,9 +38,9 @@ const programs = [
   {
     number: "02",
     title: "Orphan Support",
-    description: "Providing care, education, and love to orphaned and vulnerable children in our community.",
+    description: "Ask SOFAN about current support for orphaned and vulnerable children.",
     detail:
-      "We partner with families to provide a loving home, school fees, uniforms, and emotional support to orphaned and vulnerable children.",
+      "Specific services and support needs should be confirmed directly with the ministry.",
     action: "Sponsor a child",
     subject: "Orphan Support sponsorship",
     image: "/WhatsApp%20Image%202026-10-03%20at%208.51.33%20PM%20(1).jpeg",
@@ -36,9 +49,9 @@ const programs = [
   {
     number: "03",
     title: "Widow Support",
-    description: "Standing with widows through practical care, encouragement, and a community that shows up.",
+    description: "Ask SOFAN about current support for widows and their families.",
     detail:
-      "We seek to walk alongside widows and their families with compassion and dignity, reminding each person that they are seen, valued, and not alone.",
+      "Specific services and support needs should be confirmed directly with the ministry.",
     action: "Support widow care",
     subject: "Widow Support",
     image: "/WhatsApp%20Image%202026-10-03%20at%208.51.33%20PM.jpeg",
@@ -47,13 +60,24 @@ const programs = [
   {
     number: "04",
     title: "Mission Outreach",
-    description: "Taking the Gospel beyond church walls and serving communities with compassion.",
+    description: "Learn about SOFAN's current mission outreach and how to get involved.",
     detail:
-      "Through prayer, encouragement, and practical care, we meet people where they are and share the hope of Jesus with communities near and far.",
+      "Contact SOFAN for details of current activities and support needs.",
     action: "Support mission outreach",
     subject: "Mission Outreach support",
     image: "/WhatsApp%20Image%202026-10-03%20at%209.01.24%20PM.jpeg",
     alt: "A SOFAN ministry leader sharing a message during an outreach gathering.",
+  },
+  {
+    number: "06",
+    title: "Community Projects",
+    description: "Ask SOFAN about current community projects and ways to support them.",
+    detail:
+      "Specific project details and designated support needs can be confirmed directly with the ministry.",
+    action: "Ask about community projects",
+    subject: "Community Projects",
+    image: "/service%20to%20community.jpg",
+    alt: "SOFAN community members serving together.",
   },
 ];
 
@@ -61,7 +85,32 @@ function supportHref(subject: string) {
   return `mailto:${contactInfo.email}?subject=${encodeURIComponent(`SOFAN ${subject}`)}`;
 }
 
-export default function CharityPage() {
+function safeSupportHref(value: string | null, subject: string) {
+  if (!value) return supportHref(subject);
+  if (/^[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$/i.test(value)) return `mailto:${value}`;
+  if (/^\+?[0-9().\s-]{7,20}$/.test(value)) return `tel:${value.replace(/[^\d+]/g, "")}`;
+  try {
+    const url = new URL(value);
+    return url.protocol === "https:" || url.protocol === "http:" ? url.toString() : supportHref(subject);
+  } catch {
+    return supportHref(subject);
+  }
+}
+
+function safeImageUrl(value: string) {
+  if (value.startsWith("/") && !value.startsWith("//") && !value.includes("\\")) return value;
+  try {
+    const url = new URL(value);
+    return url.protocol === "https:" || url.protocol === "http:" ? url.toString() : null;
+  } catch {
+    return null;
+  }
+}
+
+export default async function CharityPage() {
+  await connection();
+  const projects = await loadPublishedCharityProjects();
+
   return (
     <>
       <Header />
@@ -75,9 +124,9 @@ export default function CharityPage() {
                 <span>serves.</span>
               </h1>
               <p className="outreach-hero__intro">
-                At SOFAN, we believe the love of God should be seen not only in what we preach, but
-                in how we serve people. Through practical support, compassion, and Gospel outreach,
-                we stand with vulnerable families and communities in need.
+                This page outlines ways to ask about food assistance, child and widow support,
+                mission outreach, community projects, and wider family support. Contact SOFAN to
+                confirm which programs are currently active and what is needed.
               </p>
               <div className="outreach-hero__actions">
                 <a href="#programs" className="give-button">
@@ -110,9 +159,8 @@ export default function CharityPage() {
             </div>
             <div className="outreach-intro__copy">
               <p>
-                Every act of kindness is an opportunity to demonstrate God&apos;s love. From feeding
-                families and supporting children to standing with widows and taking the Gospel to
-                communities, SOFAN seeks to serve people with dignity, compassion, and faith.
+                These areas describe ways visitors may be able to support the ministry. Please
+                contact SOFAN to confirm current activities, designated needs, and giving details.
               </p>
               <p className="outreach-intro__note">Practical care. Shared hope. A faith that serves.</p>
             </div>
@@ -150,6 +198,59 @@ export default function CharityPage() {
           </div>
         </section>
 
+        {(projects.status === "unavailable" || (projects.status === "ready" && projects.rows.length > 0)) && (
+          <section className="outreach-programs" aria-labelledby="published-projects-heading">
+            <div className="container">
+              <div className="outreach-programs__heading">
+                <div>
+                  <p className="eyebrow eyebrow--terracotta">Published by SOFAN</p>
+                  <h2 id="published-projects-heading">Community projects.</h2>
+                </div>
+                <p>These project details are managed and published by the SOFAN ministry team.</p>
+              </div>
+              {projects.status === "unavailable" ? (
+                <p role="status">Published project details are temporarily unavailable. Please contact SOFAN for current information.</p>
+              ) : (
+                <div className="outreach-programs__grid">
+                  {projects.rows.map((project) => {
+                    const imageUrl = safeImageUrl(project.imageUrl);
+                    const supportLink = safeSupportHref(project.supportContact, project.title);
+                    const externalSupportLink = /^https?:\/\//i.test(supportLink);
+                    return (
+                      <article className="outreach-program" key={project.id}>
+                        <div className="outreach-program__image">
+                          {imageUrl && (
+                            <Image
+                              src={imageUrl}
+                              alt=""
+                              fill
+                              unoptimized
+                              sizes="(max-width: 760px) 100vw, 50vw"
+                            />
+                          )}
+                          <span className="outreach-program__number">{project.category}</span>
+                        </div>
+                        <div className="outreach-program__body">
+                          <h3>{project.title}</h3>
+                          <p className="outreach-program__description">{project.description}</p>
+                          <a
+                            className="outreach-program__link"
+                            href={supportLink}
+                            target={externalSupportLink ? "_blank" : undefined}
+                            rel={externalSupportLink ? "noreferrer" : undefined}
+                          >
+                            {project.supportCta || "Ask about this project"} <span aria-hidden="true">→</span>
+                          </a>
+                        </div>
+                      </article>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </section>
+        )}
+
         <section className="outreach-giving">
           <div className="container outreach-giving__inner">
             <div>
@@ -158,9 +259,8 @@ export default function CharityPage() {
             </div>
             <div className="outreach-giving__copy">
               <p>
-                Your generosity helps us care for vulnerable people and strengthen the work already
-                happening in our communities. Get in touch to support a program or make a general
-                contribution.
+                Before giving, contact SOFAN to confirm the active program, intended use, and
+                approved way to contribute.
               </p>
               <a className="give-button" href={supportHref("General Charity Support")}>
                 Give to our work <span aria-hidden="true">→</span>

@@ -2,14 +2,16 @@ CREATE TABLE IF NOT EXISTS prayer_requests (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   name TEXT,
   phone TEXT,
+  contact_email TEXT,
   request_text TEXT,
   audio_path TEXT,
   audio_duration INTEGER,
   audio_mime_type TEXT,
   audio_size BIGINT,
   is_anonymous BOOLEAN NOT NULL DEFAULT FALSE,
-  status TEXT NOT NULL DEFAULT 'pending'
-    CHECK (status IN ('pending', 'prayed_for', 'archived')),
+  is_private BOOLEAN NOT NULL DEFAULT TRUE,
+  status TEXT NOT NULL DEFAULT 'new_request'
+    CHECK (status IN ('new_request', 'contacted', 'prayer_in_progress', 'follow_up_needed', 'answered', 'closed')),
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   CHECK (NULLIF(BTRIM(request_text), '') IS NOT NULL OR audio_path IS NOT NULL),

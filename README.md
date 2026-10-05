@@ -1,6 +1,6 @@
 # Sofan
 
-This project is a production-oriented Next.js foundation for future feature development. It establishes the architecture, design system, accessibility rules, and performance standards that every following feature must follow.
+SOFAN's public church website and Supabase-backed administration workspace, built with Next.js.
 
 ## Quick start
 
@@ -9,20 +9,60 @@ npm install
 npm run dev
 ```
 
-Open http://localhost:3000 to view the foundation app.
+Open http://localhost:3000. Copy `.env.example` to `.env.local` and set `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, and `SUPABASE_SERVICE_ROLE_KEY` from the Supabase project API settings. Public pages can run without these services; database-managed content and submissions show an explicit unavailable state until configured.
 
-## SOFAN admin demo
+## SOFAN administration
 
-The administration interface is available at `/sofan`. Dashboard, Finance, News, and Events switch client-side without changing that route.
+The administration interface is available at `/sofan` and uses Supabase Auth plus database roles. Set `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` from the Supabase project API settings, apply `db/migrations/20261005_user_roles.sql`, then create or invite the user in Supabase Auth. Access is granted only when that user's ID has a `role = 'admin'` row in `public.user_roles`; there is no admin email allowlist in environment configuration. The app uses Supabase's verified user lookup and refreshed HttpOnly session cookies. Testimony publishing is separately controlled by the user's `can_publish_testimonies` database permission, defaulting to false. Keep the service role key and all other secrets server-side and out of source control.
 
-The admin reads and writes PostgreSQL data using `DATABASE_URL`. Copy `.env.example` to `.env.local`, set the existing PostgreSQL connection string, then apply the schema and clearly marked demo rows:
+There is no public self-registration. Once the first administrator has been granted the `admin` role, signed-in administrators can use **Admin Users** in the dashboard to create another SOFAN admin account with an email and initial password. New staff receive the same dashboard privileges as the creating admin; share the initial password through a secure channel. Creating accounts uses the server-only service role key and requires the `20261005_supabase_api_access.sql` migration.
 
-```bash
-psql "$DATABASE_URL" -f db/schema.sql
-psql "$DATABASE_URL" -f db/seed.sql
+Grant admin access from the Supabase SQL Editor after the user has been created or invited:
+
+```sql
+INSERT INTO public.user_roles (user_id, role)
+SELECT id, 'admin'
+FROM auth.users
+WHERE email = 'admin@example.com'
+ON CONFLICT (user_id)
+DO UPDATE SET role = EXCLUDED.role, can_publish_testimonies = FALSE;
 ```
 
-The route shows a database setup/unavailable state instead of fabricated totals when PostgreSQL is not connected. Demo mode has no password by design; add authentication and authorization before exposing this interface outside a trusted demo environment.
+To allow the user to publish consented testimonies, set `can_publish_testimonies = TRUE` on that row. Revoke dashboard access by deleting the role row or changing `role` to `member`. Row-level security permits authenticated users to read only their own role and does not permit role changes through the app. Do not expose `SUPABASE_SERVICE_ROLE_KEY` to client-side code.
+
+The app accesses Supabase Postgres through Supabase's Data API using the project URL and server-only service-role key; it does not need a separate `DATABASE_URL` or direct Postgres driver. The anon key is used for Supabase Auth. Never expose the service-role key to browser code or public client environment variables. In Supabase Dashboard → SQL Editor, run these files in order, pasting each file's contents into a new query:
+
+1. `db/schema.sql`
+2. `db/prayer-requests.sql`
+3. `db/migrations/20261005_admin_testimonies.sql`
+4. `db/migrations/20261005_ministry_content.sql`
+5. `db/migrations/20261005_prayer_crm_pipeline.sql`
+6. `db/migrations/20261005_user_roles.sql`
+7. `db/migrations/20261005_supabase_api_access.sql`
+
+The database setup intentionally inserts no sample records. After the scripts run, tables will be empty until actual admin users submit requests or staff add and publish content. The migrations are idempotent and preserve application data. The CRM migration maps existing Pending → New Request, Prayed For → Prayer in Progress, and Archived → Closed. New submissions start in New Request. The ministry migration creates draft-by-default devotion, media, and charity-project tables. The final access migration enables RLS, denies anon/authenticated access to server-managed content, and limits the finance summary RPC to the service role; the user-roles migration separately grants authenticated users read access only to their own role. It also removes the obsolete `admins` table from older setup versions; SOFAN staff accounts are managed by Supabase Auth and `user_roles`.
+
+## Public content and submissions
+
+- Published devotions, sermons, prayer videos, ministry videos, and charity projects are managed in `/sofan` and read by their public pages. Draft or unpublished records are not shown.
+- Prayer requests may be written or recorded. Each submission is saved in the Supabase `public.prayer_requests` table and appears in the admin pipeline at New Request. Staff can move it through Contacted, Prayer in Progress, Follow-up Needed, Answered, and Closed. Requests remain private and admin-only; an optional email and private-request selection are stored. Audio is stored outside `public` and played through short-lived, authenticated links.
+- Testimonies require review and explicit publication consent. Submission does not publish automatically; only approved, consented submissions can be published, and publication permission is disabled by default.
+- Events, news, finance records, and prayer requests are managed from the authenticated admin area. Public events include only published upcoming rows.
+- Contact-form and giving links are enquiry flows, not direct web submissions or payments.
+
+## Private prayer-audio storage
+
+Create a **private** Supabase Storage bucket named `prayer-request-audio` (or set `SUPABASE_PRAYER_AUDIO_BUCKET` to the private bucket name). Set `SUPABASE_SERVICE_ROLE_KEY` from the Supabase project API settings. The service role key is used only by server code to upload, download, and remove objects; no public bucket or browser-side storage access is used. Existing audio validation, non-public storage paths, admin-only signed playback links, and byte-range playback remain in place.
+
+New production voice recordings require Supabase Storage configuration. Local development without Supabase Storage uses a private directory outside `public`; set `SOFAN_PRAYER_AUDIO_DIR` to an absolute path if you need a custom location. Existing recordings stored on a production filesystem are not automatically migrated: keep their existing private volume mounted and `SOFAN_PRAYER_AUDIO_DIR` configured until those recordings have been separately migrated or retired.
+
+Set `PRAYER_AUDIO_SIGNING_SECRET` to at least 32 random bytes encoded as text for short-lived playback tokens. Generate a value locally with `node -e "console.log(require('node:crypto').randomBytes(32).toString('base64url'))"`. This key is separate from Supabase credentials.
+
+To configure administrators without sharing project secrets, create/invite staff in Supabase Auth and assign the `admin` role in `public.user_roles`. Use the service-role key only in `.env.local` and your deployment's encrypted environment settings. Never paste the service-role key into source files, issues, or chat.
+
+## Donations
+
+Online payments are **not implemented or active**. The donation page provides contact details and a clearly labeled fee illustration only. `SOFAN_PAYMENT_PROVIDER` may be set to `sofan_gateway` or `hws_paystack` to report which provider is being prepared. The selected provider's credential and callback variables are documented as blank placeholders in `.env.example`; configuring credentials alone does not enable transactions. Confirm the provider agreement, fee schedule, currency, callback/security design, and accounting requirements with the owner before implementing payments.
 
 ## Documentation
 

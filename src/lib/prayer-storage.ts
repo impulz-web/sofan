@@ -1,8 +1,9 @@
 import { randomUUID } from "node:crypto";
 import { mkdir, readFile, realpath, unlink, writeFile } from "node:fs/promises";
-import { isAbsolute, join, relative, sep } from "node:path";
+import { isAbsolute, join, relative, resolve, sep } from "node:path";
 import { parseBuffer } from "music-metadata";
 import { MAX_AUDIO_BYTES, MAX_RECORDING_SECONDS } from "@/lib/prayer-config";
+import { createSupabaseStorageAdminClient, isSupabaseStorageConfigured } from "@/lib/supabase/storage";
 
 export type SupportedAudioMime = "audio/webm" | "audio/mp4" | "audio/ogg" | "audio/wav";
 
@@ -89,7 +90,16 @@ export async function validateAudioBytes(bytes: Buffer): Promise<ValidatedAudio>
 }
 
 function privateStorageDirectory() {
-  return join(process.cwd(), "storage", "prayer-requests");
+  const configuredDirectory = process.env.SOFAN_PRAYER_AUDIO_DIR?.trim();
+  if (process.env.NODE_ENV === "production" && !configuredDirectory) {
+    throw new Error("SOFAN_PRAYER_AUDIO_DIR must point to a durable private volume in production.");
+  }
+  if (configuredDirectory && !isAbsolute(configuredDirectory)) {
+    throw new Error("SOFAN_PRAYER_AUDIO_DIR must be an absolute filesystem path.");
+  }
+  return configuredDirectory
+    ? resolve(configuredDirectory)
+    : join(process.cwd(), "storage", "prayer-requests");
 }
 
 async function ensurePrivateStorageDirectory() {
@@ -107,10 +117,27 @@ async function ensurePrivateStorageDirectory() {
 }
 
 function safeAudioKey(key: string) {
-  return /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\.(webm|mp4|ogg|wav)$/.test(key);
+  return /^(?:prayer-requests\/)?[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\.(webm|mp4|ogg|wav)$/i.test(key);
 }
 
 export async function savePrivatePrayerAudio(audio: ValidatedAudio) {
+  if (isSupabaseStorageConfigured()) {
+    const key = `prayer-requests/${randomUUID()}.${audio.extension}`;
+    const { error } = await createSupabaseStorageAdminClient().upload(key, audio.bytes, {
+      contentType: audio.mimeType,
+      cacheControl: "0",
+      upsert: false,
+    });
+    if (error) {
+      console.error("Supabase Storage rejected a private prayer recording upload.", error);
+      throw new Error("Could not save the private prayer recording to Supabase Storage.");
+    }
+    return key;
+  }
+  if (process.env.NODE_ENV === "production") {
+    throw new Error("Supabase Storage must be configured for prayer recordings in production.");
+  }
+
   const directory = await ensurePrivateStorageDirectory();
   const key = `${randomUUID()}.${audio.extension}`;
   await writeFile(join(/*turbopackIgnore: true*/ directory, key), audio.bytes, { flag: "wx", mode: 0o600 });
@@ -119,14 +146,31 @@ export async function savePrivatePrayerAudio(audio: ValidatedAudio) {
 
 export async function readPrivatePrayerAudio(key: string) {
   if (!safeAudioKey(key)) throw new Error("Invalid private audio key.");
+  if (key.startsWith("prayer-requests/")) {
+    const { data, error } = await createSupabaseStorageAdminClient().download(key);
+    if (error || !data) {
+      console.error("Supabase Storage could not retrieve a private prayer recording.", error);
+      throw new Error("Could not retrieve the private prayer recording from Supabase Storage.");
+    }
+    return Buffer.from(await data.arrayBuffer());
+  }
   return readFile(join(/*turbopackIgnore: true*/ await ensurePrivateStorageDirectory(), key));
 }
 
 export async function deletePrivatePrayerAudio(key: string) {
   if (!safeAudioKey(key)) return;
+  if (key.startsWith("prayer-requests/")) {
+    const { error } = await createSupabaseStorageAdminClient().remove([key]);
+    if (error) {
+      console.error("Supabase Storage could not delete an unlinked prayer recording.", error);
+      throw new Error("Could not delete the private prayer recording from Supabase Storage.");
+    }
+    return;
+  }
   try {
     await unlink(join(/*turbopackIgnore: true*/ await ensurePrivateStorageDirectory(), key));
-  } catch {
-    return;
+  } catch (error) {
+    if (error && typeof error === "object" && "code" in error && error.code === "ENOENT") return;
+    throw error;
   }
 }

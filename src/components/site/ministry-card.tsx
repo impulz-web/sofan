@@ -1,4 +1,5 @@
 import Image from "next/image";
+import Link from "next/link";
 import type { ReactNode } from "react";
 
 interface MinistryCardProps {
@@ -18,9 +19,9 @@ export function MinistryCard({ title, description, image, eyebrow }: MinistryCar
         {eyebrow ? <span className="card-kicker">{eyebrow}</span> : null}
         <h3>{title}</h3>
         <p>{description}</p>
-        <a href="#" aria-label={`Learn more about ${title}`}>
-          Learn more <span aria-hidden="true">→</span>
-        </a>
+        <Link href="/charity" aria-label={`Explore SOFAN outreach related to ${title}`}>
+          Explore our outreach <span aria-hidden="true">→</span>
+        </Link>
       </div>
     </article>
   );

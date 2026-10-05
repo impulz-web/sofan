@@ -2,11 +2,13 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { navItems } from "@/data/site";
 
 export function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const router = useRouter();
 
   return (
     <header className="site-header" id="top">
@@ -14,6 +16,18 @@ export function Header() {
         <Link href="/" className="brand" aria-label="SOFAN home">
           <Image src="/logo.jpeg" alt="SOFAN logo" width={180} height={88} priority />
         </Link>
+
+        <button
+          type="button"
+          className="site-back-button"
+          onClick={() => {
+            if (window.history.length > 1) window.history.back();
+            else router.push("/");
+          }}
+        >
+          <span aria-hidden="true">←</span>
+          Back
+        </button>
 
         <nav
           id="main-navigation"
@@ -31,6 +45,7 @@ export function Header() {
           <button
             type="button"
             className="mobile-nav-toggle"
+            aria-label={isMenuOpen ? "Close navigation menu" : "Open navigation menu"}
             aria-expanded={isMenuOpen}
             aria-controls="main-navigation"
             onClick={() => setIsMenuOpen((value) => !value)}
@@ -40,7 +55,7 @@ export function Header() {
             <span />
           </button>
 
-          <Link href="/#giving" className="give-button">
+          <Link href="/donate" className="give-button">
             Give
           </Link>
         </div>

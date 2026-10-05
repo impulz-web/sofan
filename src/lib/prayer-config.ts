@@ -2,5 +2,6 @@ export const MAX_RECORDING_SECONDS = 5 * 60;
 export const MAX_AUDIO_BYTES = 10 * 1024 * 1024;
 export const MAX_PRAYER_TEXT_LENGTH = 10_000;
 export const MAX_PRAYER_NAME_LENGTH = 160;
+export const MAX_PRAYER_EMAIL_LENGTH = 254;
 export const MAX_PRAYER_PHONE_LENGTH = 80;
 export const AUDIO_SIGNED_URL_TTL_SECONDS = 3 * 60;

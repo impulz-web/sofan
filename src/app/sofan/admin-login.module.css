@@ -1,0 +1,100 @@
+.loginPage {
+  display: grid;
+  min-height: 100vh;
+  place-items: center;
+  padding: 1.5rem;
+  background: #f4f5f7;
+  color: #222a31;
+}
+
+.loginCard {
+  display: grid;
+  gap: 1rem;
+  width: min(100%, 26rem);
+  padding: 2rem;
+  border: 1px solid #e0e4e8;
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: 0 1rem 3rem rgb(34 42 49 / 8%);
+}
+
+.backButton {
+  justify-self: start;
+  padding: 0.35rem 0;
+  color: var(--sofan-terracotta-deep);
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.brandMark {
+  display: grid;
+  width: 2.5rem;
+  aspect-ratio: 1;
+  place-items: center;
+  border-radius: 5px;
+  background: var(--sofan-terracotta);
+  color: var(--sofan-white);
+  font-weight: 900;
+}
+
+.eyebrow {
+  margin-bottom: -0.75rem;
+  color: #707981;
+  font-size: 0.8rem;
+}
+
+.loginCard h1 {
+  font-size: 1.5rem;
+}
+
+.loginCard > p:not(.eyebrow),
+.setupNotice,
+.error {
+  font-size: 0.9rem;
+}
+
+.setupNotice {
+  padding: 0.75rem;
+  border: 1px solid #e7d5a9;
+  border-radius: 4px;
+  background: #fffaf0;
+}
+
+.loginCard form {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.loginCard label {
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.loginCard input {
+  min-height: 2.8rem;
+  padding: 0.65rem;
+  border: 1px solid #cbd2d8;
+  border-radius: 4px;
+  font: inherit;
+}
+
+.loginCard button {
+  min-height: 2.8rem;
+  margin-top: 0.35rem;
+  border: 0;
+  border-radius: 4px;
+  background: var(--sofan-terracotta);
+  color: #fff;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 700;
+}
+
+.loginCard button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.error {
+  color: #a32828;
+}
