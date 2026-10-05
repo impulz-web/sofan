@@ -11,7 +11,7 @@
 - **Contact:** public contact details and service information; message actions open the visitor’s email app rather than submitting to a website inbox.
 - **Prayer Request:** written or recorded requests, with anonymous and private options.
 - **Daily Devotion, Sermons, Prayer for Viewers, Videos, Testimonies:** public pages for approved content; database-managed items are shown only after publication.
-- **Donate:** giving guidance and contact details. The fee calculator is an illustration, not a payment form.
+- **Donate:** giving guidance and contact details for visitors to enquire with SOFAN.
 
 The homepage keeps its photo and dark image overlay, with the requested terracotta text panel. The “Life at SOFAN” collage has been adapted for mobile so the photos display larger and stack vertically.
 
@@ -34,7 +34,7 @@ Prayer requests are saved to the Supabase `public.prayer_requests` table and are
 ## What is not live yet
 
 - **Database and Supabase:** No production Supabase project credentials were configured for this review. The site’s public pages work without them, but admin authentication requires Supabase Auth; prayer-audio production storage requires a private Supabase bucket; database-backed submissions and published libraries require the supplied SQL setup and migrations to be applied in Supabase.
-- **Online giving:** No payment is collected. Provider credentials, agreements, callbacks, and payment processing have not been implemented or enabled. The displayed HWS/Paystack estimate uses the proposed 3% + 6% fee assumption only.
+- **Giving enquiries:** Visitors are directed to contact SOFAN for current giving information.
 - **Contact inbox:** Contact actions open email; there is no website inbox or direct contact-form submission.
 - **Media:** No unprovided recordings or third-party video links are invented. The owner/admin needs to add and publish real recordings.
 - **Social links:** Confirm and provide official accounts before adding them.
@@ -47,8 +47,7 @@ Prayer requests are saved to the Supabase `public.prayer_requests` table and are
 3. Configure `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, and `SUPABASE_SERVICE_ROLE_KEY` in encrypted server/deployment variables; create a private `prayer-request-audio` bucket.
 4. Create the first staff account in Supabase Auth and assign `role = 'admin'` in `public.user_roles`. After that, existing admins can create additional staff accounts from the dashboard's Admin Users section. Role assignment is managed in the database, not environment variables. `can_publish_testimonies` provides a separate per-user testimony-publishing permission, false by default.
 5. Set `PRAYER_AUDIO_SIGNING_SECRET` to at least 32 random bytes encoded as text. Retain the old private audio volume and configure `SOFAN_PRAYER_AUDIO_DIR` until legacy recordings are migrated or retired.
-6. Confirm the payment provider, organization/merchant account, currency, fee agreement, settlement process, and callbacks before commissioning payment development.
-7. Before launch, test database migrations and CRUD flows, admin login and role denial, prayer audio storage/playback, backups, and production deployment with the owner’s actual configuration. Consider login rate limiting for admin sign-in.
+6. Before launch, test database migrations and CRUD flows, admin login and role denial, prayer audio storage/playback, backups, and production deployment with the owner’s actual configuration. Consider login rate limiting for admin sign-in.
 
 ## Verification in this review
 

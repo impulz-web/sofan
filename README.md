@@ -60,9 +60,9 @@ Set `PRAYER_AUDIO_SIGNING_SECRET` to at least 32 random bytes encoded as text fo
 
 To configure administrators without sharing project secrets, create/invite staff in Supabase Auth and assign the `admin` role in `public.user_roles`. Use the service-role key only in `.env.local` and your deployment's encrypted environment settings. Never paste the service-role key into source files, issues, or chat.
 
-## Donations
+## Giving
 
-Online payments are **not implemented or active**. The donation page provides contact details and a clearly labeled fee illustration only. `SOFAN_PAYMENT_PROVIDER` may be set to `sofan_gateway` or `hws_paystack` to report which provider is being prepared. The selected provider's credential and callback variables are documented as blank placeholders in `.env.example`; configuring credentials alone does not enable transactions. Confirm the provider agreement, fee schedule, currency, callback/security design, and accounting requirements with the owner before implementing payments.
+The Donate page directs visitors to contact SOFAN for current giving information.
 
 ## Documentation
 

@@ -1,14 +1,11 @@
 import type { Metadata } from "next";
-import { connection } from "next/server";
 import { MinistryResource } from "@/components/site/ministry-resource";
-import { DonationEstimator } from "@/components/site/donation-estimator";
 import { contactInfo } from "@/data/site";
-import { getDonationPaymentConfiguration } from "@/lib/payment-config";
 import styles from "./page.module.css";
 
 export const metadata: Metadata = {
   title: "Donate",
-  description: "Learn how to support SOFAN and review payment configuration and fee information.",
+  description: "Learn how to support SOFAN and contact the church for giving information.",
 };
 
 const supportAreas = [
@@ -21,14 +18,6 @@ const supportAreas = [
 ];
 
 export default async function DonatePage() {
-  await connection();
-  const payment = getDonationPaymentConfiguration();
-  const selectedProvider = payment.provider === "sofan_gateway"
-    ? "SOFAN's own gateway"
-    : payment.provider === "hws_paystack"
-      ? "HWS Agency Paystack"
-      : null;
-
   return (
     <MinistryResource
       eyebrow="Giving"
@@ -46,36 +35,12 @@ export default async function DonatePage() {
         </ul>
       </section>
 
-      <section className={`container ${styles.methods}`} aria-labelledby="payment-options-heading">
-        <div className={styles.sectionHeading}>
-          <p className="eyebrow eyebrow--terracotta">Payment options</p>
-          <h2 id="payment-options-heading">Payment configuration pending</h2>
-          <p>No online payments are being collected on this website yet. Do not enter card or banking details here.</p>
-          {selectedProvider && (
-            <p>
-              Selected provider: {selectedProvider}.
-              {payment.missing.length > 0
-                ? ` Still needed: ${payment.missing.join(", ")}.`
-                : " Credentials are present, but payment processing is not yet implemented or activated."}
-            </p>
-          )}
-        </div>
-        <article className={styles.methodCard}>
-          <h3>SOFAN’s own payment gateway</h3>
-          <p>Awaiting confirmed provider, merchant account, credentials, and callback details from SOFAN.</p>
-        </article>
-        <article className={styles.methodCard}>
-          <h3>HWS Agency Paystack</h3>
-          <p>
-            The proposed fee schedule is 3% Paystack plus 6% HWS service fee. This option is not active
-            until the agreement and live configuration are confirmed.
-          </p>
-        </article>
-      </section>
-      <div className={styles.estimatorWrap}><DonationEstimator /></div>
-
       <section className={`container ${styles.contact}`} aria-labelledby="giving-contact-heading">
-        <h2 id="giving-contact-heading">Confirm giving details with SOFAN.</h2>
+        <div className={styles.sectionHeading}>
+          <p className="eyebrow eyebrow--terracotta">Giving enquiries</p>
+          <h2 id="giving-contact-heading">Contact SOFAN for giving information.</h2>
+          <p>Reach out to the church for current giving details and to discuss how your contribution can support the ministry.</p>
+        </div>
         <a href={`mailto:${contactInfo.email}?subject=${encodeURIComponent("SOFAN donation enquiry")}`}>
           Ask about supporting the ministry <span aria-hidden="true">→</span>
         </a>
