@@ -5,9 +5,10 @@ import Link from "next/link";
 import { loginAdminAction } from "./auth-actions";
 import styles from "./admin-login.module.css";
 
-export function AdminLoginForm({ configured }: { configured: boolean }) {
+export function AdminLoginForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
 
@@ -28,40 +29,46 @@ export function AdminLoginForm({ configured }: { configured: boolean }) {
     <main className={styles.loginPage}>
       <section className={styles.loginCard} aria-labelledby="admin-login-title">
         <Link href="/" className={styles.backButton}>← Back to website</Link>
-        <span className={styles.brandMark} aria-hidden="true">S</span>
-        <p className={styles.eyebrow}>SOFAN Administration</p>
-        <h1 id="admin-login-title">Admin sign in</h1>
-        <p>Sign in with your SOFAN admin account. Ask an existing administrator to create an account if you need access.</p>
-        {!configured && (
-          <p className={styles.setupNotice} role="status">
-            Admin access is unavailable until Supabase Auth is configured and the user_roles migration has been applied.
-          </p>
-        )}
-        <form onSubmit={submit}>
+        <h1 id="admin-login-title">Sign in</h1>
+        <form onSubmit={submit} autoComplete="on">
           <label htmlFor="admin-email">Email</label>
           <input
             id="admin-email"
             type="email"
+            name="email"
             autoComplete="username"
             value={email}
             onChange={(event) => setEmail(event.target.value)}
             maxLength={254}
             required
-            disabled={!configured || busy}
+            disabled={busy}
           />
           <label htmlFor="admin-password">Password</label>
-          <input
-            id="admin-password"
-            type="password"
-            autoComplete="current-password"
-            value={password}
-            onChange={(event) => setPassword(event.target.value)}
-            maxLength={1024}
-            required
-            disabled={!configured || busy}
-          />
+          <div className={styles.passwordField}>
+            <input
+              id="admin-password"
+              type={showPassword ? "text" : "password"}
+              name="password"
+              autoComplete="current-password"
+              value={password}
+              onChange={(event) => setPassword(event.target.value)}
+              maxLength={1024}
+              required
+              disabled={busy}
+            />
+            <button
+              className={styles.passwordToggle}
+              type="button"
+              aria-label={showPassword ? "Hide password" : "Show password"}
+              aria-pressed={showPassword}
+              onClick={() => setShowPassword((visible) => !visible)}
+              disabled={busy}
+            >
+              {showPassword ? "Hide" : "Show"}
+            </button>
+          </div>
           {message && <p className={styles.error} role="alert">{message}</p>}
-          <button type="submit"           disabled={!configured || busy || !email || !password}>
+          <button type="submit" disabled={busy || !email || !password}>
             {busy ? "Signing in…" : "Sign in"}
           </button>
         </form>

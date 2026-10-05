@@ -210,8 +210,8 @@ export async function saveFinanceTransaction(input: FinanceInput): Promise<Actio
   if (!Number.isFinite(amount) || amount <= 0) {
     return { success: false, message: "Enter an amount greater than zero." };
   }
-  if (currency !== "KES") {
-    return { success: false, message: "KES is the only enabled currency for this admin demo." };
+  if (currency !== "USD") {
+    return { success: false, message: "USD is the only currency accepted for new or updated transactions." };
   }
   if (!paymentMethod) {
     return { success: false, message: "Enter a payment method." };

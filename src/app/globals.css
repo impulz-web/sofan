@@ -2286,6 +2286,21 @@ h3 {
   color: rgba(253, 253, 253, 0.8);
 }
 
+.site-footer__bottomLinks {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.site-footer__bottomLinks > a:not(.footer-give) {
+  color: rgba(253, 253, 253, 0.8);
+  font-size: 0.82rem;
+}
+
+.site-footer__bottomLinks > a:not(.footer-give):hover {
+  color: var(--sofan-white);
+}
+
 .footer-give {
   color: var(--sofan-gold);
   font-weight: 700;

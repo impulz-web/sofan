@@ -51,7 +51,10 @@ export function Footer() {
 
       <div className="site-footer__bottom container">
         <p>© 2026 SOFAN. All rights reserved.</p>
-        <Link href="/donate" className="footer-give">Give</Link>
+        <div className="site-footer__bottomLinks">
+          <Link href="/sofan">login</Link>
+          <Link href="/donate" className="footer-give">Give</Link>
+        </div>
       </div>
     </footer>
   );

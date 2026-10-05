@@ -1,26 +1,4 @@
-CREATE OR REPLACE FUNCTION public.get_finance_summary()
-RETURNS TABLE (
-  total_received NUMERIC,
-  tithes NUMERIC,
-  offerings NUMERIC,
-  donations NUMERIC
-)
-LANGUAGE SQL
-STABLE
-SECURITY INVOKER
-SET search_path = public
-AS $$
-  SELECT
-    COALESCE(SUM(amount), 0),
-    COALESCE(SUM(amount) FILTER (WHERE type = 'tithe'), 0),
-    COALESCE(SUM(amount) FILTER (WHERE type = 'offering'), 0),
-    COALESCE(SUM(amount) FILTER (WHERE type = 'donation'), 0)
-  FROM public.finance_transactions
-  WHERE currency = 'KES';
-$$;
-
-REVOKE ALL ON FUNCTION public.get_finance_summary() FROM PUBLIC, anon, authenticated;
-GRANT EXECUTE ON FUNCTION public.get_finance_summary() TO service_role;
+DROP FUNCTION IF EXISTS public.get_finance_summary();
 
 DROP TABLE IF EXISTS public.admins;
 

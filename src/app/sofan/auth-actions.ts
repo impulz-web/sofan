@@ -20,12 +20,12 @@ export async function loginAdminAction(emailInput: string, password: string): Pr
     const supabase = await createSupabaseServerClient();
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     if (error || !data.user) {
-      return { success: false, message: "Admin sign-in failed. Check the credentials or contact the site administrator." };
+      return { success: false, message: "Sign-in failed. Check your email and password." };
     }
     if (!(await isSupabaseAdminUser(supabase, data.user.id))) {
       const { error: signOutError } = await supabase.auth.signOut();
       if (signOutError) console.error("Could not clear a Supabase session without the admin role.", signOutError);
-      return { success: false, message: "This account does not have the SOFAN admin role." };
+      return { success: false, message: "Sign-in failed. Check your email and password." };
     }
     return { success: true };
   } catch (error) {

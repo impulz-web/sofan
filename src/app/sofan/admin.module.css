@@ -192,22 +192,6 @@
   padding: 1.5rem clamp(1rem, 3vw, 2.5rem) 3rem;
 }
 
-.databaseNotice {
-  display: grid;
-  gap: 0.25rem;
-  padding: 0.9rem 1rem;
-  border: 1px solid #e7d5a9;
-  border-left: 4px solid #c58c29;
-  border-radius: 4px;
-  background: #fffaf0;
-  color: #544526;
-  font-size: 0.84rem;
-}
-
-.databaseNotice strong {
-  font-size: 0.9rem;
-}
-
 .feedback {
   padding: 0.75rem 1rem;
   border: 1px solid #cfd9e1;

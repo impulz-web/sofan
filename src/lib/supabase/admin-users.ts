@@ -12,11 +12,11 @@ export async function createAdminUser(email: string, password: string) {
   if (error) throw error;
   if (!data.user) throw new Error("Supabase did not return the new user account.");
 
-  const { error: roleError } = await supabase.from("user_roles").insert({
+  const { error: roleError } = await supabase.from("user_roles").upsert({
     user_id: data.user.id,
     role: "admin",
     can_publish_testimonies: false,
-  });
+  }, { onConflict: "user_id" });
   if (roleError) {
     const { error: cleanupError } = await supabase.auth.admin.deleteUser(data.user.id);
     if (cleanupError) {

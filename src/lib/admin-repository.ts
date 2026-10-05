@@ -168,6 +168,40 @@ function mapProject(row: Record<string, unknown>): CharityProject {
   };
 }
 
+async function loadFinanceSummary(client: ReturnType<typeof createSupabaseDatabaseClient>): Promise<FinanceSummary> {
+  const totalsInCents = { totalReceived: 0, tithes: 0, offerings: 0, donations: 0 };
+  const pageSize = 1000;
+
+  for (let offset = 0; ; offset += pageSize) {
+    const { data, error } = await client.from("finance_transactions")
+      .select("id,type,amount,currency")
+      .order("id", { ascending: true })
+      .range(offset, offset + pageSize - 1);
+    if (error) fail(error);
+
+    const rows = data ?? [];
+    for (const row of rows) {
+      if (String(row.currency).trim() !== "USD") continue;
+      const cents = Math.round(Number(row.amount) * 100);
+      if (!Number.isSafeInteger(cents)) throw new Error("A finance amount is outside the supported numeric range.");
+      totalsInCents.totalReceived += cents;
+      if (row.type === "tithe") totalsInCents.tithes += cents;
+      if (row.type === "offering") totalsInCents.offerings += cents;
+      if (row.type === "donation") totalsInCents.donations += cents;
+    }
+
+    if (rows.length < pageSize) break;
+  }
+
+  const asAmount = (cents: number) => (cents / 100).toFixed(2);
+  return {
+    totalReceived: asAmount(totalsInCents.totalReceived),
+    tithes: asAmount(totalsInCents.tithes),
+    offerings: asAmount(totalsInCents.offerings),
+    donations: asAmount(totalsInCents.donations),
+  };
+}
+
 export async function loadAdminSnapshot(): Promise<AdminSnapshot> {
   try {
     const client = createSupabaseDatabaseClient();
@@ -200,25 +234,18 @@ export async function loadAdminSnapshot(): Promise<AdminSnapshot> {
         .order("start_time", { ascending: true })
         .limit(4),
       client.from("prayer_requests").select("id", { count: "exact", head: true }).eq("status", "new_request"),
-      client.rpc("get_finance_summary"),
+      loadFinanceSummary(client),
     ]);
 
-    for (const result of [finance, news, events, recentNews, upcomingEvents, prayerCount, summary]) {
+    for (const result of [finance, news, events, recentNews, upcomingEvents, prayerCount]) {
       if (result.error) fail(result.error);
     }
 
     const rows = (finance.data ?? []).map((row) => row as unknown as Record<string, unknown>);
-    const rpcSummary = summary.data?.[0];
-    if (!rpcSummary) throw new Error("Supabase returned no finance summary.");
 
     return {
       databaseStatus: "connected",
-      summary: {
-        totalReceived: String(rpcSummary.total_received),
-        tithes: String(rpcSummary.tithes),
-        offerings: String(rpcSummary.offerings),
-        donations: String(rpcSummary.donations),
-      },
+      summary,
       newPrayerRequestCount: String(prayerCount.count ?? 0),
       transactions: rows.map(mapFinance),
       news: (news.data ?? []).map((row) => mapNews(row as unknown as Record<string, unknown>)),

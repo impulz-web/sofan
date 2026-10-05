@@ -62,7 +62,7 @@ function blankFinance(): FinanceInput {
   return {
     type: "tithe",
     amount: "",
-    currency: "KES",
+    currency: "USD",
     paymentMethod: "M-Pesa",
     reference: "",
     donorName: "",
@@ -104,13 +104,26 @@ function blankEvent(): EventInput {
   };
 }
 
-function money(amount: string, currency = "KES") {
+function money(amount: string, currency = "USD") {
   const value = Number(amount);
-  if (!Number.isFinite(value)) return `${currency} 0.00`;
-  return `${currency} ${new Intl.NumberFormat("en-KE", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(value)}`;
+  const safeValue = Number.isFinite(value) ? value : 0;
+  if (currency === "USD") {
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(safeValue);
+  }
+  if (currency === "KES") {
+    return new Intl.NumberFormat("en-KE", {
+      style: "currency",
+      currency: "KES",
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(safeValue);
+  }
+  return `${currency.trim()} ${safeValue.toFixed(2)}`;
 }
 
 function dateLabel(value: string) {
@@ -153,19 +166,6 @@ function StatusPill({ published }: { published: boolean }) {
     <span className={`${styles.statusPill} ${published ? styles.statusPublished : styles.statusDraft}`}>
       {published ? "Published" : "Draft"}
     </span>
-  );
-}
-
-function DatabaseNotice({ status }: { status: AdminSnapshot["databaseStatus"] }) {
-  if (status === "connected") return null;
-  const message = status === "not-configured"
-    ? "Supabase is not configured. Set the Supabase project URL, anon key, and service-role key, then apply the SQL files described in README.md."
-    : "Supabase is unavailable or the schema is missing. Check the project configuration and apply the SQL setup and migration files.";
-  return (
-    <div className={styles.databaseNotice} role="status">
-      <strong>{status === "not-configured" ? "Database setup required" : "Database unavailable"}</strong>
-      <span>{message}</span>
-    </div>
   );
 }
 
@@ -408,7 +408,7 @@ export function AdminDashboard({
           <div className={styles.sectionHeading}>
             <div>
               <h2 id="transactions-heading">{financeView === "overview" ? "Transactions" : financeViews.find((view) => view.id === financeView)?.label}</h2>
-              <p className={styles.mutedText}>KES transactions</p>
+              <p className={styles.mutedText}>USD transactions</p>
             </div>
             <button className={styles.primaryButton} type="button" disabled={!connected || busy} onClick={() => setFinanceEditor(blankFinance())}>
               Add transaction
@@ -434,7 +434,8 @@ export function AdminDashboard({
                 </Field>
                 <Field label="Currency" htmlFor="finance-currency">
                   <select id="finance-currency" value={financeEditor.currency} onChange={(event) => setFinanceEditor({ ...financeEditor, currency: event.target.value })}>
-                    <option value="KES">KES</option>
+                    <option value="USD">USD — US Dollar</option>
+                    {financeEditor.currency === "KES" && <option value="KES">KES — legacy record</option>}
                   </select>
                 </Field>
                 <Field label="Payment method" htmlFor="finance-method">
@@ -452,6 +453,11 @@ export function AdminDashboard({
                 <Field label="Transaction date" htmlFor="finance-date">
                   <input id="finance-date" type="date" value={financeEditor.transactionDate} onChange={(event) => setFinanceEditor({ ...financeEditor, transactionDate: event.target.value })} required />
                 </Field>
+                {financeEditor.currency === "KES" && (
+                  <p className={styles.mutedText}>
+                    This is a legacy KES entry. If updating it, convert the amount to USD before changing the currency.
+                  </p>
+                )}
                 <Field label="Notes" htmlFor="finance-notes" wide>
                   <textarea id="finance-notes" rows={3} value={financeEditor.notes} onChange={(event) => setFinanceEditor({ ...financeEditor, notes: event.target.value })} />
                 </Field>
@@ -617,13 +623,12 @@ export function AdminDashboard({
           </div>
           <div className={styles.topbarStatus}>
             <span className={`${styles.connectionDot} ${connected ? styles.connectionReady : ""}`} />
-            <span>{connected ? "Supabase connected" : snapshot.databaseStatus === "not-configured" ? "Database setup required" : "Database unavailable"}</span>
+            <span>Admin workspace</span>
             <span className={styles.demoBadge}>ADMIN</span>
           </div>
         </header>
 
         <div className={styles.content}>
-          <DatabaseNotice status={snapshot.databaseStatus} />
           {notice && <p className={styles.feedback} role="status">{notice}</p>}
           {activeTab === "dashboard" && renderDashboard()}
           {activeTab === "finance" && renderFinance()}

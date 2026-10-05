@@ -13,9 +13,9 @@ Open http://localhost:3000. Copy `.env.example` to `.env.local` and set `NEXT_PU
 
 ## SOFAN administration
 
-The administration interface is available at `/sofan` and uses Supabase Auth plus database roles. Set `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` from the Supabase project API settings, apply `db/migrations/20261005_user_roles.sql`, then create or invite the user in Supabase Auth. Access is granted only when that user's ID has a `role = 'admin'` row in `public.user_roles`; there is no admin email allowlist in environment configuration. The app uses Supabase's verified user lookup and refreshed HttpOnly session cookies. Testimony publishing is separately controlled by the user's `can_publish_testimonies` database permission, defaulting to false. Keep the service role key and all other secrets server-side and out of source control.
+The administration interface is available at `/sofan` and uses Supabase Auth plus database roles. Set `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` from the Supabase project API settings, then apply the role-table and Auth-trigger migrations. The trigger automatically creates a `member` row in `public.user_roles` whenever Supabase Auth creates a user. Admins created in the dashboard are promoted to `admin` automatically by the server-side account-creation flow. Access is granted only when a user's role is `admin`; there is no admin email allowlist in environment configuration. The app uses Supabase's verified user lookup and refreshed HttpOnly session cookies. Testimony publishing is separately controlled by the user's `can_publish_testimonies` database permission, defaulting to false. Keep the service role key and all other secrets server-side and out of source control.
 
-There is no public self-registration. Once the first administrator has been granted the `admin` role, signed-in administrators can use **Admin Users** in the dashboard to create another SOFAN admin account with an email and initial password. New staff receive the same dashboard privileges as the creating admin; share the initial password through a secure channel. Creating accounts uses the server-only service role key and requires the `20261005_supabase_api_access.sql` migration.
+There is no public self-registration. Once the first administrator has been granted the `admin` role, signed-in administrators can use **Admin Users** in the dashboard to create another SOFAN admin account with an email and initial password. The Auth trigger creates the account's default role row, and the server-side flow promotes it to `admin`. New staff receive the same dashboard privileges as the creating admin; share the initial password through a secure channel. Creating accounts uses the server-only service role key and requires the `20261005_supabase_api_access.sql` migration.
 
 Grant admin access from the Supabase SQL Editor after the user has been created or invited:
 
@@ -38,9 +38,13 @@ The app accesses Supabase Postgres through Supabase's Data API using the project
 4. `db/migrations/20261005_ministry_content.sql`
 5. `db/migrations/20261005_prayer_crm_pipeline.sql`
 6. `db/migrations/20261005_user_roles.sql`
-7. `db/migrations/20261005_supabase_api_access.sql`
+7. `db/migrations/20261005_auth_user_role_trigger.sql`
+8. `db/migrations/20261005_supabase_api_access.sql`
+9. `db/migrations/20261005_finance_currency_usd.sql`
 
-The database setup intentionally inserts no sample records. After the scripts run, tables will be empty until actual admin users submit requests or staff add and publish content. The migrations are idempotent and preserve application data. The CRM migration maps existing Pending → New Request, Prayed For → Prayer in Progress, and Archived → Closed. New submissions start in New Request. The ministry migration creates draft-by-default devotion, media, and charity-project tables. The final access migration enables RLS, denies anon/authenticated access to server-managed content, and limits the finance summary RPC to the service role; the user-roles migration separately grants authenticated users read access only to their own role. It also removes the obsolete `admins` table from older setup versions; SOFAN staff accounts are managed by Supabase Auth and `user_roles`.
+The database setup intentionally inserts no sample records. After the scripts run, tables will be empty until actual admin users submit requests or staff add and publish content. The migrations are idempotent and preserve application data. The CRM migration maps existing Pending → New Request, Prayed For → Prayer in Progress, and Archived → Closed. New submissions start in New Request. The ministry migration creates draft-by-default devotion, media, and charity-project tables. The Auth trigger creates a `member` role record for every Auth user; the dashboard's trusted-admin creation flow promotes newly created staff accounts. The final access migration enables RLS and denies anon/authenticated access to server-managed content; the user-roles migration separately grants authenticated users read access only to their own role. It also removes the obsolete `admins` table and any older unused finance-summary RPC; SOFAN staff accounts are managed by Supabase Auth and `user_roles`.
+
+Finance entries use USD. The USD migration changes the default for new rows but does not convert existing KES amounts; legacy records retain their original currency and are excluded from USD totals until they are reconciled and re-entered in USD.
 
 ## Public content and submissions
 
@@ -58,7 +62,7 @@ New production voice recordings require Supabase Storage configuration. Local de
 
 Set `PRAYER_AUDIO_SIGNING_SECRET` to at least 32 random bytes encoded as text for short-lived playback tokens. Generate a value locally with `node -e "console.log(require('node:crypto').randomBytes(32).toString('base64url'))"`. This key is separate from Supabase credentials.
 
-To configure administrators without sharing project secrets, create/invite staff in Supabase Auth and assign the `admin` role in `public.user_roles`. Use the service-role key only in `.env.local` and your deployment's encrypted environment settings. Never paste the service-role key into source files, issues, or chat.
+To configure the first administrator without sharing project secrets, create the user in Supabase Auth. The Auth trigger adds a `member` role row; update that row to `admin` in `public.user_roles`. After that, signed-in administrators can create and promote more staff from the dashboard. Use the service-role key only in `.env.local` and your deployment's encrypted environment settings. Never paste the service-role key into source files, issues, or chat.
 
 ## Giving
 

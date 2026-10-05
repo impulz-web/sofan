@@ -19,7 +19,7 @@ The homepage keeps its photo and dark image overlay, with the requested terracot
 
 The private `/sofan` area uses Supabase Auth and grants access only to users with the `admin` role in the database; it has these tools:
 
-- Dashboard and manual finance records, including transaction filters.
+- Dashboard and manual finance records in USD, including transaction filters.
 - News, events, and prayer-request management.
 - Prayer-request status updates and protected audio playback.
 - A six-stage prayer-request CRM pipeline: New Request → Contacted → Prayer in Progress → Follow-up Needed → Answered → Closed.
@@ -43,9 +43,9 @@ Prayer requests are saved to the Supabase `public.prayer_requests` table and are
 ## Owner/deployment checklist
 
 1. Confirm the public facts and provide current photos, approved sermon/prayer links, event details, and official social links.
-2. Configure `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, and `SUPABASE_SERVICE_ROLE_KEY`; in Supabase SQL Editor apply `db/schema.sql`, `db/prayer-requests.sql`, and all five feature/access migrations in the order listed in README.md. No sample data is inserted and no separate `DATABASE_URL` is used. The pipeline migration preserves existing requests and maps their old statuses.
+2. Configure `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, and `SUPABASE_SERVICE_ROLE_KEY`; in Supabase SQL Editor apply `db/schema.sql`, `db/prayer-requests.sql`, and all seven feature/access migrations in the order listed in README.md. No sample data is inserted and no separate `DATABASE_URL` is used. The pipeline migration preserves existing requests and maps their old statuses.
 3. Configure `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, and `SUPABASE_SERVICE_ROLE_KEY` in encrypted server/deployment variables; create a private `prayer-request-audio` bucket.
-4. Create the first staff account in Supabase Auth and assign `role = 'admin'` in `public.user_roles`. After that, existing admins can create additional staff accounts from the dashboard's Admin Users section. Role assignment is managed in the database, not environment variables. `can_publish_testimonies` provides a separate per-user testimony-publishing permission, false by default.
+4. Create the first staff account in Supabase Auth. The Auth trigger creates its default `member` role; change that role to `admin` in `public.user_roles`. After that, existing admins can create additional staff accounts from the dashboard's Admin Users section. Role assignment is managed in the database, not environment variables. `can_publish_testimonies` provides a separate per-user testimony-publishing permission, false by default.
 5. Set `PRAYER_AUDIO_SIGNING_SECRET` to at least 32 random bytes encoded as text. Retain the old private audio volume and configure `SOFAN_PRAYER_AUDIO_DIR` until legacy recordings are migrated or retired.
 6. Before launch, test database migrations and CRUD flows, admin login and role denial, prayer audio storage/playback, backups, and production deployment with the owner’s actual configuration. Consider login rate limiting for admin sign-in.
 
