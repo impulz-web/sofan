@@ -1,0 +1,101 @@
+.page {
+  min-height: 60vh;
+  background: var(--sofan-white);
+}
+
+.hero {
+  padding: 3.5rem 1rem;
+  border-bottom: 1px solid var(--sofan-line);
+  background: var(--sofan-cream);
+}
+
+.heroInner,
+.content {
+  width: min(100%, 900px);
+  margin-inline: auto;
+}
+
+.heroInner {
+  display: grid;
+  justify-items: start;
+  gap: 1rem;
+}
+
+.hero h1 {
+  max-width: 13ch;
+  font-size: clamp(2.6rem, 6vw, 4.75rem);
+  line-height: 0.98;
+  text-transform: uppercase;
+}
+
+.heroCopy {
+  max-width: 58ch;
+  color: var(--sofan-text-soft);
+  font-size: 1.05rem;
+}
+
+.whatsappLink {
+  display: inline-flex;
+  min-height: 3rem;
+  align-items: center;
+  gap: 0.55rem;
+  margin-top: 0.5rem;
+  padding: 0.7rem 1rem;
+  border: 1px solid var(--sofan-terracotta);
+  border-radius: 4px;
+  background: var(--sofan-terracotta);
+  color: var(--sofan-white);
+  font-size: 0.85rem;
+  font-weight: 750;
+}
+
+.whatsappLink span {
+  color: var(--sofan-gold);
+}
+
+.content {
+  display: grid;
+  gap: 1.25rem;
+  padding: 2rem 1rem 4rem;
+}
+
+.formPanel {
+  display: grid;
+  gap: 1.25rem;
+  padding: clamp(1rem, 3vw, 1.75rem);
+  border: 1px solid var(--sofan-line);
+  border-radius: 6px;
+  background: #fff;
+}
+
+.formHeading {
+  display: grid;
+  gap: 0.4rem;
+}
+
+.formHeading h2 {
+  font-size: clamp(1.4rem, 3vw, 2rem);
+  line-height: 1.15;
+  text-transform: uppercase;
+}
+
+.formHeading p,
+.privacyNote {
+  color: var(--sofan-text-soft);
+  font-size: 0.9rem;
+}
+
+.privacyNote {
+  padding-left: 0.85rem;
+  border-left: 3px solid var(--sofan-gold);
+}
+
+@media (max-width: 600px) {
+  .hero {
+    padding: 2.75rem 1rem;
+  }
+
+  .content {
+    padding: 1.25rem 0.8rem 3.5rem;
+  }
+}

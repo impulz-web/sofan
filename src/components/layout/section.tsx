@@ -1,10 +1,14 @@
-import type { ReactNode } from "react";
+import type { HTMLAttributes, ReactNode } from "react";
 
-interface SectionProps {
+interface SectionProps extends HTMLAttributes<HTMLElement> {
   children: ReactNode;
   className?: string;
 }
 
-export function Section({ children, className = "" }: SectionProps) {
-  return <section className={`section ${className}`.trim()}>{children}</section>;
+export function Section({ children, className = "", ...props }: SectionProps) {
+  return (
+    <section className={`section ${className}`.trim()} {...props}>
+      {children}
+    </section>
+  );
 }

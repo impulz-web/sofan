@@ -15,11 +15,11 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: {
-    default: "Foundation",
-    template: "%s | Foundation",
+    default: "SOFAN | Seeds of Faith for All Nations",
+    template: "%s | SOFAN",
   },
   description:
-    "A production-ready Next.js foundation for scalable design systems, architecture, and performance-minded product development.",
+    "SOFAN — Seeds of Faith for All Nations. A warm, community-centered church website focused on worship, growth, and service.",
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {

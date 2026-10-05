@@ -19,6 +19,7 @@
 
 # production
 /build
+/storage/prayer-requests/
 
 # misc
 .DS_Store
