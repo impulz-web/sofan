@@ -1345,6 +1345,11 @@ h3 {
   .timeline {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
+
+  .community-moments__grid {
+    grid-template-columns: 1fr;
+    gap: 2rem;
+  }
 }
 
 @media (max-width: 760px) {
@@ -1367,6 +1372,29 @@ h3 {
 
   .hero-photo-collage {
     height: 340px;
+  }
+
+  .hero-photo-collage--community {
+    display: grid;
+    height: auto;
+    gap: 1rem;
+  }
+
+  .hero-photo-collage--community .hero-photo-shape {
+    position: relative;
+    inset: auto;
+    width: 100%;
+    height: clamp(14rem, 66vw, 21rem);
+    transform: none;
+    border-radius: 0.75rem;
+  }
+
+  .hero-photo-collage--community .hero-photo-collage__image {
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    transform: none;
   }
 }
 
